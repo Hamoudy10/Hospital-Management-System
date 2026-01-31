@@ -1,87 +1,173 @@
-import { Router } from 'express'
+// ============================================
+// Pharmacy Routes
+// ============================================
+
+import { Router } from 'express';
 import {
-  // Drug catalog
-  getDrugs,
-  getDrugById,
   createDrug,
+  getDrugById,
   updateDrug,
-  deleteDrug,
-  searchDrugs,
-  
-  // Inventory
-  getInventory,
-  getInventoryByDrug,
-  addStock,
+  getDrugs,
   adjustStock,
+  getLowStockAlerts,
   getExpiringDrugs,
-  getLowStockDrugs,
-  getInventoryHistory,
-  
-  // Prescriptions
-  getPrescriptions,
-  getPrescriptionById,
+  getDrugCategories,
   createPrescription,
-  updatePrescription,
-  cancelPrescription,
-  getPrescriptionsByPatient,
+  getPrescriptionById,
   getPendingPrescriptions,
-  
-  // Dispensing
-  dispensePrescription,
-  getDispensingHistory,
-  returnToStock,
-  
-  // Drug interactions
-  checkDrugInteractions,
-  
-  // Reports
-  getPharmacyStatistics,
-  getInventoryReport
-} from '../controllers/pharmacyController'
-import { requireAuth } from '../middleware/auth'
-import { requirePermission } from '../middleware/role'
+  dispensePrescription
+} from '../controllers/pharmacyController';
+import { requireAuth } from '../middleware/auth';
+import { requirePermission, requireAnyPermission } from '../middleware/role';
 
-const router = Router()
+const router = Router();
 
-// All routes require authentication
-router.use(requireAuth)
+// ==================== DRUG INVENTORY ROUTES ====================
 
-// Drug catalog management
-router.get('/drugs', requirePermission('drugs.read'), getDrugs)
-router.get('/drugs/search', requirePermission('drugs.read'), searchDrugs)
-router.get('/drugs/:id', requirePermission('drugs.read'), getDrugById)
-router.post('/drugs', requirePermission('drugs.write'), createDrug)
-router.put('/drugs/:id', requirePermission('drugs.write'), updateDrug)
-router.delete('/drugs/:id', requirePermission('drugs.write'), deleteDrug)
+/**
+ * @route   POST /api/pharmacy/drugs
+ * @desc    Create new drug
+ * @access  Private - drugs.write
+ */
+router.post(
+  '/drugs',
+  requireAuth,
+  requirePermission('drugs.write'),
+  createDrug
+);
 
-// Drug interactions check
-router.post('/drugs/interactions', requirePermission('drugs.read'), checkDrugInteractions)
+/**
+ * @route   GET /api/pharmacy/drugs
+ * @desc    Get all drugs (paginated)
+ * @access  Private - drugs.read
+ */
+router.get(
+  '/drugs',
+  requireAuth,
+  requirePermission('drugs.read'),
+  getDrugs
+);
 
-// Inventory management
-router.get('/inventory', requirePermission('drugs.read'), getInventory)
-router.get('/inventory/expiring', requirePermission('drugs.read'), getExpiringDrugs)
-router.get('/inventory/low-stock', requirePermission('drugs.read'), getLowStockDrugs)
-router.get('/inventory/history', requirePermission('drugs.read'), getInventoryHistory)
-router.get('/inventory/drug/:drugId', requirePermission('drugs.read'), getInventoryByDrug)
-router.post('/inventory/add', requirePermission('drugs.write'), addStock)
-router.post('/inventory/adjust', requirePermission('drugs.write'), adjustStock)
+/**
+ * @route   GET /api/pharmacy/drugs/categories
+ * @desc    Get drug categories
+ * @access  Private - drugs.read
+ */
+router.get(
+  '/drugs/categories',
+  requireAuth,
+  requirePermission('drugs.read'),
+  getDrugCategories
+);
 
-// Prescriptions
-router.get('/prescriptions', requirePermission('prescriptions.read'), getPrescriptions)
-router.get('/prescriptions/pending', requirePermission('prescriptions.read'), getPendingPrescriptions)
-router.get('/prescriptions/patient/:patientId', requirePermission('prescriptions.read'), getPrescriptionsByPatient)
-router.get('/prescriptions/:id', requirePermission('prescriptions.read'), getPrescriptionById)
-router.post('/prescriptions', requirePermission('prescriptions.write'), createPrescription)
-router.put('/prescriptions/:id', requirePermission('prescriptions.write'), updatePrescription)
-router.delete('/prescriptions/:id', requirePermission('prescriptions.write'), cancelPrescription)
+/**
+ * @route   GET /api/pharmacy/drugs/low-stock
+ * @desc    Get low stock alerts
+ * @access  Private - inventory.read
+ */
+router.get(
+  '/drugs/low-stock',
+  requireAuth,
+  requirePermission('inventory.read'),
+  getLowStockAlerts
+);
 
-// Dispensing
-router.post('/prescriptions/:id/dispense', requirePermission('prescriptions.fulfill'), dispensePrescription)
-router.get('/dispensing/history', requirePermission('prescriptions.read'), getDispensingHistory)
-router.post('/dispensing/:id/return', requirePermission('drugs.write'), returnToStock)
+/**
+ * @route   GET /api/pharmacy/drugs/expiring
+ * @desc    Get expiring drugs
+ * @access  Private - inventory.read
+ */
+router.get(
+  '/drugs/expiring',
+  requireAuth,
+  requirePermission('inventory.read'),
+  getExpiringDrugs
+);
 
-// Reports and statistics
-router.get('/statistics', requirePermission('drugs.read'), getPharmacyStatistics)
-router.get('/reports/inventory', requirePermission('drugs.read'), getInventoryReport)
+/**
+ * @route   GET /api/pharmacy/drugs/:id
+ * @desc    Get drug by ID
+ * @access  Private - drugs.read
+ */
+router.get(
+  '/drugs/:id',
+  requireAuth,
+  requirePermission('drugs.read'),
+  getDrugById
+);
 
-export default router
+/**
+ * @route   PUT /api/pharmacy/drugs/:id
+ * @desc    Update drug
+ * @access  Private - drugs.write
+ */
+router.put(
+  '/drugs/:id',
+  requireAuth,
+  requirePermission('drugs.write'),
+  updateDrug
+);
+
+/**
+ * @route   POST /api/pharmacy/stock/adjust
+ * @desc    Adjust drug stock
+ * @access  Private - inventory.write
+ */
+router.post(
+  '/stock/adjust',
+  requireAuth,
+  requirePermission('inventory.write'),
+  adjustStock
+);
+
+// ==================== PRESCRIPTION ROUTES ====================
+
+/**
+ * @route   POST /api/pharmacy/prescriptions
+ * @desc    Create prescription
+ * @access  Private - prescriptions.write
+ */
+router.post(
+  '/prescriptions',
+  requireAuth,
+  requirePermission('prescriptions.write'),
+  createPrescription
+);
+
+/**
+ * @route   GET /api/pharmacy/prescriptions/pending
+ * @desc    Get pending prescriptions for dispensing
+ * @access  Private - prescriptions.read or prescriptions.fulfill
+ */
+router.get(
+  '/prescriptions/pending',
+  requireAuth,
+  requireAnyPermission('prescriptions.read', 'prescriptions.fulfill'),
+  getPendingPrescriptions
+);
+
+/**
+ * @route   GET /api/pharmacy/prescriptions/:id
+ * @desc    Get prescription by ID
+ * @access  Private - prescriptions.read
+ */
+router.get(
+  '/prescriptions/:id',
+  requireAuth,
+  requirePermission('prescriptions.read'),
+  getPrescriptionById
+);
+
+/**
+ * @route   POST /api/pharmacy/prescriptions/dispense
+ * @desc    Dispense prescription
+ * @access  Private - prescriptions.fulfill
+ */
+router.post(
+  '/prescriptions/dispense',
+  requireAuth,
+  requirePermission('prescriptions.fulfill'),
+  dispensePrescription
+);
+
+export default router;

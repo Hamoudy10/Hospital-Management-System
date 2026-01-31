@@ -1,101 +1,196 @@
-import { Router } from 'express'
+// ============================================
+// Report Routes
+// ============================================
+
+import { Router } from 'express';
 import {
-  // Financial reports
   getRevenueReport,
-  getExpenseReport,
-  getProfitLossReport,
-  getOutstandingPaymentsReport,
-  getCashFlowReport,
-  getMpesaTransactionsReport,
-  getDailyCollectionsReport,
-  
-  // Medical reports
-  getPatientStatisticsReport,
+  getOutstandingReport,
+  getDailyCollectionReport,
+  getPatientVisitReport,
   getDiagnosisReport,
-  getVisitSummaryReport,
   getDoctorPerformanceReport,
-  getDepartmentStatisticsReport,
-  
-  // Inventory reports
-  getInventoryStatusReport,
-  getStockMovementReport,
-  getExpiryReport,
-  getDrugConsumptionReport,
-  
-  // Lab reports
-  getLabTestsReport,
+  getLabTestReport,
   getLabTurnaroundReport,
-  getLabRevenueReport,
-  
-  // Appointment reports
+  getInventoryReport,
+  getStockMovementReport,
   getAppointmentReport,
-  getNoShowReport,
-  getWaitTimeReport,
-  
-  // General reports
-  generateCustomReport,
-  getReportTemplates,
-  saveReportTemplate,
-  deleteReportTemplate,
-  scheduleReport,
-  getScheduledReports,
-  deleteScheduledReport,
+  getAuditReport,
   exportReport
-} from '../controllers/reportController'
-import { requireAuth } from '../middleware/auth'
-import { requirePermission } from '../middleware/role'
+} from '../controllers/reportController';
+import { requireAuth } from '../middleware/auth';
+import { requirePermission, requireAnyPermission, requireRole } from '../middleware/role';
 
-const router = Router()
+const router = Router();
 
-// All routes require authentication
-router.use(requireAuth)
+// ==================== FINANCIAL REPORTS ====================
 
-// Financial reports
-router.get('/financial/revenue', requirePermission('reports.financial'), getRevenueReport)
-router.get('/financial/expenses', requirePermission('reports.financial'), getExpenseReport)
-router.get('/financial/profit-loss', requirePermission('reports.financial'), getProfitLossReport)
-router.get('/financial/outstanding', requirePermission('reports.financial'), getOutstandingPaymentsReport)
-router.get('/financial/cash-flow', requirePermission('reports.financial'), getCashFlowReport)
-router.get('/financial/mpesa', requirePermission('reports.financial'), getMpesaTransactionsReport)
-router.get('/financial/daily-collections', requirePermission('reports.financial'), getDailyCollectionsReport)
+/**
+ * @route   GET /api/reports/financial/revenue
+ * @desc    Get revenue report
+ * @access  Private - reports.financial
+ */
+router.get(
+  '/financial/revenue',
+  requireAuth,
+  requirePermission('reports.financial'),
+  getRevenueReport
+);
 
-// Medical reports
-router.get('/medical/patient-statistics', requirePermission('reports.medical'), getPatientStatisticsReport)
-router.get('/medical/diagnosis', requirePermission('reports.medical'), getDiagnosisReport)
-router.get('/medical/visit-summary', requirePermission('reports.medical'), getVisitSummaryReport)
-router.get('/medical/doctor-performance', requirePermission('reports.medical'), getDoctorPerformanceReport)
-router.get('/medical/department-statistics', requirePermission('reports.medical'), getDepartmentStatisticsReport)
+/**
+ * @route   GET /api/reports/financial/outstanding
+ * @desc    Get outstanding invoices report
+ * @access  Private - reports.financial
+ */
+router.get(
+  '/financial/outstanding',
+  requireAuth,
+  requirePermission('reports.financial'),
+  getOutstandingReport
+);
 
-// Inventory reports
-router.get('/inventory/status', requirePermission('reports.inventory'), getInventoryStatusReport)
-router.get('/inventory/stock-movement', requirePermission('reports.inventory'), getStockMovementReport)
-router.get('/inventory/expiry', requirePermission('reports.inventory'), getExpiryReport)
-router.get('/inventory/drug-consumption', requirePermission('reports.inventory'), getDrugConsumptionReport)
+/**
+ * @route   GET /api/reports/financial/daily-collection
+ * @desc    Get daily collection report
+ * @access  Private - reports.financial
+ */
+router.get(
+  '/financial/daily-collection',
+  requireAuth,
+  requirePermission('reports.financial'),
+  getDailyCollectionReport
+);
 
-// Lab reports
-router.get('/lab/tests', requirePermission('reports.lab'), getLabTestsReport)
-router.get('/lab/turnaround', requirePermission('reports.lab'), getLabTurnaroundReport)
-router.get('/lab/revenue', requirePermission('reports.lab'), getLabRevenueReport)
+// ==================== MEDICAL REPORTS ====================
 
-// Appointment reports
-router.get('/appointments/summary', requirePermission('reports.appointments'), getAppointmentReport)
-router.get('/appointments/no-shows', requirePermission('reports.appointments'), getNoShowReport)
-router.get('/appointments/wait-time', requirePermission('reports.appointments'), getWaitTimeReport)
+/**
+ * @route   GET /api/reports/medical/visits
+ * @desc    Get patient visit report
+ * @access  Private - reports.medical
+ */
+router.get(
+  '/medical/visits',
+  requireAuth,
+  requirePermission('reports.medical'),
+  getPatientVisitReport
+);
 
-// Custom reports
-router.post('/custom', requirePermission('reports.custom'), generateCustomReport)
+/**
+ * @route   GET /api/reports/medical/diagnosis
+ * @desc    Get diagnosis report
+ * @access  Private - reports.medical
+ */
+router.get(
+  '/medical/diagnosis',
+  requireAuth,
+  requirePermission('reports.medical'),
+  getDiagnosisReport
+);
 
-// Report templates
-router.get('/templates', requirePermission('reports.read'), getReportTemplates)
-router.post('/templates', requirePermission('reports.write'), saveReportTemplate)
-router.delete('/templates/:id', requirePermission('reports.write'), deleteReportTemplate)
+/**
+ * @route   GET /api/reports/medical/doctor-performance
+ * @desc    Get doctor performance report
+ * @access  Private - reports.medical
+ */
+router.get(
+  '/medical/doctor-performance',
+  requireAuth,
+  requirePermission('reports.medical'),
+  getDoctorPerformanceReport
+);
 
-// Scheduled reports
-router.post('/schedule', requirePermission('reports.write'), scheduleReport)
-router.get('/scheduled', requirePermission('reports.read'), getScheduledReports)
-router.delete('/scheduled/:id', requirePermission('reports.write'), deleteScheduledReport)
+// ==================== LAB REPORTS ====================
 
-// Export reports
-router.post('/export', requirePermission('reports.read'), exportReport)
+/**
+ * @route   GET /api/reports/lab/tests
+ * @desc    Get lab test report
+ * @access  Private - reports.read or lab.tests.read
+ */
+router.get(
+  '/lab/tests',
+  requireAuth,
+  requireAnyPermission('reports.read', 'lab.tests.read'),
+  getLabTestReport
+);
 
-export default router
+/**
+ * @route   GET /api/reports/lab/turnaround
+ * @desc    Get lab turnaround time report
+ * @access  Private - reports.read or lab.tests.read
+ */
+router.get(
+  '/lab/turnaround',
+  requireAuth,
+  requireAnyPermission('reports.read', 'lab.tests.read'),
+  getLabTurnaroundReport
+);
+
+// ==================== INVENTORY REPORTS ====================
+
+/**
+ * @route   GET /api/reports/inventory
+ * @desc    Get inventory report
+ * @access  Private - reports.inventory
+ */
+router.get(
+  '/inventory',
+  requireAuth,
+  requirePermission('reports.inventory'),
+  getInventoryReport
+);
+
+/**
+ * @route   GET /api/reports/inventory/stock-movement
+ * @desc    Get stock movement report
+ * @access  Private - reports.inventory
+ */
+router.get(
+  '/inventory/stock-movement',
+  requireAuth,
+  requirePermission('reports.inventory'),
+  getStockMovementReport
+);
+
+// ==================== APPOINTMENT REPORTS ====================
+
+/**
+ * @route   GET /api/reports/appointments
+ * @desc    Get appointment report
+ * @access  Private - reports.read
+ */
+router.get(
+  '/appointments',
+  requireAuth,
+  requirePermission('reports.read'),
+  getAppointmentReport
+);
+
+// ==================== AUDIT REPORTS ====================
+
+/**
+ * @route   GET /api/reports/audit
+ * @desc    Get audit log report
+ * @access  Private - audit.read (Admin only)
+ */
+router.get(
+  '/audit',
+  requireAuth,
+  requirePermission('audit.read'),
+  getAuditReport
+);
+
+// ==================== EXPORT ====================
+
+/**
+ * @route   GET /api/reports/export
+ * @desc    Export report (PDF/Excel)
+ * @access  Private - reports.read
+ */
+router.get(
+  '/export',
+  requireAuth,
+  requirePermission('reports.read'),
+  exportReport
+);
+
+export default router;

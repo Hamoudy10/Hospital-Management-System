@@ -1,38 +1,106 @@
-import { Router } from 'express'
+// ============================================
+// Patient Routes
+// ============================================
+
+import { Router } from 'express';
 import {
   createPatient,
-  getPatients,
   getPatientById,
   updatePatient,
-  deletePatient,
   searchPatients,
-  getPatientVisits,
-  getPatientAttachments,
-  uploadPatientAttachment,
-  deletePatientAttachment
-} from '../controllers/patientController'
-import { requireAuth } from '../middleware/auth'
-import { requirePermission } from '../middleware/role'
+  getPatients,
+  getPatientMedicalHistory,
+  deletePatient
+} from '../controllers/patientController';
+import { requireAuth } from '../middleware/auth';
+import { requirePermission, requireAnyPermission } from '../middleware/role';
 
-const router = Router()
+const router = Router();
 
-// All routes require authentication
-router.use(requireAuth)
+// ==================== PATIENT ROUTES ====================
 
-// Patient CRUD
-router.post('/', requirePermission('patients.register'), createPatient)
-router.get('/', requirePermission('patients.read'), getPatients)
-router.get('/search', requirePermission('patients.read'), searchPatients)
-router.get('/:id', requirePermission('patients.read'), getPatientById)
-router.put('/:id', requirePermission('patients.write'), updatePatient)
-router.delete('/:id', requirePermission('patients.write'), deletePatient)
+/**
+ * @route   POST /api/patients
+ * @desc    Register new patient
+ * @access  Private - patients.register or patients.write
+ */
+router.post(
+  '/',
+  requireAuth,
+  requireAnyPermission('patients.register', 'patients.write'),
+  createPatient
+);
 
-// Patient visits
-router.get('/:id/visits', requirePermission('visits.read'), getPatientVisits)
+/**
+ * @route   GET /api/patients
+ * @desc    Get all patients (paginated)
+ * @access  Private - patients.read
+ */
+router.get(
+  '/',
+  requireAuth,
+  requirePermission('patients.read'),
+  getPatients
+);
 
-// Patient attachments (e.g., documents, images)
-router.get('/:id/attachments', requirePermission('patients.read'), getPatientAttachments)
-router.post('/:id/attachments', requirePermission('patients.write'), uploadPatientAttachment)
-router.delete('/:id/attachments/:attachmentId', requirePermission('patients.write'), deletePatientAttachment)
+/**
+ * @route   GET /api/patients/search
+ * @desc    Search patients by name, phone, patient number, or national ID
+ * @access  Private - patients.read
+ */
+router.get(
+  '/search',
+  requireAuth,
+  requirePermission('patients.read'),
+  searchPatients
+);
 
-export default router
+/**
+ * @route   GET /api/patients/:id
+ * @desc    Get patient by ID
+ * @access  Private - patients.read
+ */
+router.get(
+  '/:id',
+  requireAuth,
+  requirePermission('patients.read'),
+  getPatientById
+);
+
+/**
+ * @route   PUT /api/patients/:id
+ * @desc    Update patient
+ * @access  Private - patients.write
+ */
+router.put(
+  '/:id',
+  requireAuth,
+  requirePermission('patients.write'),
+  updatePatient
+);
+
+/**
+ * @route   DELETE /api/patients/:id
+ * @desc    Soft delete patient
+ * @access  Private - patients.delete
+ */
+router.delete(
+  '/:id',
+  requireAuth,
+  requirePermission('patients.delete'),
+  deletePatient
+);
+
+/**
+ * @route   GET /api/patients/:id/medical-history
+ * @desc    Get patient's medical history
+ * @access  Private - medical_records.read
+ */
+router.get(
+  '/:id/medical-history',
+  requireAuth,
+  requirePermission('medical_records.read'),
+  getPatientMedicalHistory
+);
+
+export default router;

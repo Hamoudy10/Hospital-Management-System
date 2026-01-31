@@ -1,42 +1,119 @@
-import { Router } from 'express'
+// ============================================
+// Appointment Routes
+// ============================================
+
+import { Router } from 'express';
 import {
   createAppointment,
-  getAppointments,
   getAppointmentById,
   updateAppointment,
-  cancelAppointment,
-  getAppointmentsByDoctor,
-  getAppointmentsByPatient,
+  getAppointments,
   getTodaysAppointments,
-  getDoctorSchedule,
-  updateDoctorSchedule,
-  checkInPatient,
-  completeAppointment
-} from '../controllers/appointmentController'
-import { requireAuth } from '../middleware/auth'
-import { requirePermission } from '../middleware/role'
+  checkInAppointment,
+  getDoctorAvailability,
+  cancelAppointment
+} from '../controllers/appointmentController';
+import { requireAuth } from '../middleware/auth';
+import { requirePermission } from '../middleware/role';
 
-const router = Router()
+const router = Router();
 
-// All routes require authentication
-router.use(requireAuth)
+// ==================== APPOINTMENT ROUTES ====================
 
-// Appointment CRUD
-router.post('/', requirePermission('appointments.write'), createAppointment)
-router.get('/', requirePermission('appointments.read'), getAppointments)
-router.get('/today', requirePermission('appointments.read'), getTodaysAppointments)
-router.get('/doctor/:doctorId', requirePermission('appointments.read'), getAppointmentsByDoctor)
-router.get('/patient/:patientId', requirePermission('appointments.read'), getAppointmentsByPatient)
-router.get('/:id', requirePermission('appointments.read'), getAppointmentById)
-router.put('/:id', requirePermission('appointments.write'), updateAppointment)
-router.delete('/:id', requirePermission('appointments.write'), cancelAppointment)
+/**
+ * @route   POST /api/appointments
+ * @desc    Create new appointment
+ * @access  Private - appointments.write
+ */
+router.post(
+  '/',
+  requireAuth,
+  requirePermission('appointments.write'),
+  createAppointment
+);
 
-// Appointment workflow
-router.post('/:id/check-in', requirePermission('appointments.write'), checkInPatient)
-router.post('/:id/complete', requirePermission('appointments.write'), completeAppointment)
+/**
+ * @route   GET /api/appointments
+ * @desc    Get all appointments (paginated with filters)
+ * @access  Private - appointments.read
+ */
+router.get(
+  '/',
+  requireAuth,
+  requirePermission('appointments.read'),
+  getAppointments
+);
 
-// Doctor schedule management
-router.get('/schedule/:doctorId', requirePermission('appointments.read'), getDoctorSchedule)
-router.put('/schedule/:doctorId', requirePermission('appointments.write'), updateDoctorSchedule)
+/**
+ * @route   GET /api/appointments/today
+ * @desc    Get today's appointments for a doctor
+ * @access  Private - appointments.read
+ */
+router.get(
+  '/today',
+  requireAuth,
+  requirePermission('appointments.read'),
+  getTodaysAppointments
+);
 
-export default router
+/**
+ * @route   GET /api/appointments/availability
+ * @desc    Get doctor's available time slots
+ * @access  Private - appointments.read
+ */
+router.get(
+  '/availability',
+  requireAuth,
+  requirePermission('appointments.read'),
+  getDoctorAvailability
+);
+
+/**
+ * @route   GET /api/appointments/:id
+ * @desc    Get appointment by ID
+ * @access  Private - appointments.read
+ */
+router.get(
+  '/:id',
+  requireAuth,
+  requirePermission('appointments.read'),
+  getAppointmentById
+);
+
+/**
+ * @route   PUT /api/appointments/:id
+ * @desc    Update appointment
+ * @access  Private - appointments.write
+ */
+router.put(
+  '/:id',
+  requireAuth,
+  requirePermission('appointments.write'),
+  updateAppointment
+);
+
+/**
+ * @route   POST /api/appointments/:id/check-in
+ * @desc    Check in patient for appointment
+ * @access  Private - appointments.write
+ */
+router.post(
+  '/:id/check-in',
+  requireAuth,
+  requirePermission('appointments.write'),
+  checkInAppointment
+);
+
+/**
+ * @route   POST /api/appointments/:id/cancel
+ * @desc    Cancel appointment
+ * @access  Private - appointments.write
+ */
+router.post(
+  '/:id/cancel',
+  requireAuth,
+  requirePermission('appointments.write'),
+  cancelAppointment
+);
+
+export default router;

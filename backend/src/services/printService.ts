@@ -11,9 +11,33 @@ import { logger } from '../utils/logger';
 // Extend jsPDF type for autotable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: unknown) => jsPDF;
+    autoTable: (options: AutoTableOptions) => jsPDF;
     lastAutoTable: { finalY: number };
   }
+}
+
+interface AutoTableOptions {
+  startY?: number;
+  head?: string[][];
+  body?: (string | number)[][];
+  theme?: 'striped' | 'grid' | 'plain';
+  styles?: {
+    fontSize?: number;
+    cellPadding?: number;
+    fontStyle?: string;
+    fillColor?: number[];
+    textColor?: number[];
+  };
+  headStyles?: {
+    fontStyle?: string;
+    fillColor?: number[];
+    textColor?: number[];
+  };
+  columnStyles?: Record<number, {
+    cellWidth?: number;
+    halign?: 'left' | 'center' | 'right';
+  }>;
+  margin?: { left?: number; right?: number; top?: number; bottom?: number };
 }
 
 interface ReceiptData {
@@ -37,6 +61,21 @@ interface ReceiptData {
   paymentReference?: string;
   cashier: string;
   date: string;
+}
+
+interface InvoiceItemRecord {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
+interface LabTestCatalogRecord {
+  test_name?: string;
+  category?: string;
+  normal_range?: string;
+  unit?: string;
+  turnaround_time?: string;
 }
 
 class PrintService {
@@ -79,7 +118,7 @@ class PrintService {
         invoiceNumber: invoice.invoice_number,
         patientName: `${patient.first_name} ${patient.last_name}`,
         patientNumber: patient.patient_number,
-        items: invoice.items.map((item: { description: string; quantity: number; unit_price: number; total_price: number }) => ({
+        items: invoice.items.map((item: InvoiceItemRecord) => ({
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unit_price,
@@ -324,7 +363,7 @@ class PrintService {
       doc.setFont('helvetica', 'normal');
 
       const patient = labTest.patient;
-      const catalog = labTest.catalog;
+      const catalog = labTest.catalog as LabTestCatalogRecord | null;
 
       doc.text(`Patient Name: ${patient.first_name} ${patient.last_name}`, margin, yPos);
       doc.text(`Patient No: ${patient.patient_number}`, pageWidth / 2, yPos);
@@ -334,8 +373,10 @@ class PrintService {
       doc.text(`Gender: ${patient.gender}`, pageWidth / 2, yPos);
 
       yPos += 6;
-      doc.text(`Test: ${catalog.test_name}`, margin, yPos);
-      doc.text(`Category: ${catalog.category}`, pageWidth / 2, yPos);
+      const testName = catalog?.test_name || labTest.test_name || 'Unknown Test';
+      const testCategory = catalog?.category || 'General';
+      doc.text(`Test: ${testName}`, margin, yPos);
+      doc.text(`Category: ${testCategory}`, pageWidth / 2, yPos);
 
       yPos += 6;
       doc.text(`Sample Collected: ${labTest.sample_collected_at ? new Date(labTest.sample_collected_at).toLocaleString() : 'N/A'}`, margin, yPos);
@@ -361,7 +402,7 @@ class PrintService {
       }
 
       // Reference Range
-      if (catalog.normal_range) {
+      if (catalog?.normal_range) {
         yPos += 10;
         doc.setFont('helvetica', 'bold');
         doc.text('Reference Range:', margin, yPos);
@@ -523,6 +564,98 @@ class PrintService {
     }
 
     return doc.output('datauristring');
+  }
+
+  /**
+   * Generate prescription PDF
+   */
+  async generatePrescriptionPDF(prescriptionId: string): Promise<string> {
+    try {
+      const { data: prescription, error } = await supabase
+        .from('prescriptions')
+        .select(`
+          *,
+          patient:patient_id(patient_number, first_name, last_name, date_of_birth),
+          doctor:doctor_id(first_name, last_name, department),
+          items:prescription_items(*)
+        `)
+        .eq('id', prescriptionId)
+        .single();
+
+      if (error || !prescription) {
+        throw new Error('Prescription not found');
+      }
+
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a5'
+      });
+
+      const pageWidth = 148;
+      const margin = 10;
+      let yPos = margin;
+
+      // Header
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(this.hospitalName, pageWidth / 2, yPos, { align: 'center' });
+
+      yPos += 5;
+      doc.setFontSize(10);
+      doc.text('PRESCRIPTION', pageWidth / 2, yPos, { align: 'center' });
+
+      yPos += 8;
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+
+      // Patient Info
+      yPos += 6;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      const patient = prescription.patient;
+      doc.text(`Patient: ${patient.first_name} ${patient.last_name}`, margin, yPos);
+      doc.text(`No: ${patient.patient_number}`, pageWidth - margin, yPos, { align: 'right' });
+
+      yPos += 5;
+      const doctor = prescription.doctor;
+      doc.text(`Doctor: Dr. ${doctor.first_name} ${doctor.last_name}`, margin, yPos);
+      doc.text(`Dept: ${doctor.department || 'General'}`, pageWidth - margin, yPos, { align: 'right' });
+
+      yPos += 5;
+      doc.text(`Date: ${new Date(prescription.created_at).toLocaleDateString()}`, margin, yPos);
+
+      // Medications
+      yPos += 8;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Rx:', margin, yPos);
+
+      yPos += 5;
+      doc.setFont('helvetica', 'normal');
+      prescription.items.forEach((item: { drug_name: string; dosage: string; frequency: string; duration: string; quantity: number; instructions?: string }, index: number) => {
+        doc.text(`${index + 1}. ${item.drug_name}`, margin + 5, yPos);
+        yPos += 4;
+        doc.setFontSize(8);
+        doc.text(`   ${item.dosage} - ${item.frequency} - ${item.duration}`, margin + 5, yPos);
+        yPos += 4;
+        doc.text(`   Qty: ${item.quantity}${item.instructions ? ` | ${item.instructions}` : ''}`, margin + 5, yPos);
+        yPos += 6;
+        doc.setFontSize(9);
+      });
+
+      // Signature
+      yPos += 10;
+      doc.setLineWidth(0.3);
+      doc.line(pageWidth - margin - 40, yPos, pageWidth - margin, yPos);
+      yPos += 4;
+      doc.setFontSize(8);
+      doc.text("Doctor's Signature", pageWidth - margin - 20, yPos, { align: 'center' });
+
+      return doc.output('datauristring');
+    } catch (error) {
+      logger.error('Failed to generate prescription PDF:', error);
+      throw error;
+    }
   }
 }
 

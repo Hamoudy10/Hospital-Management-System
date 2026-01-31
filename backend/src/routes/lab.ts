@@ -1,79 +1,173 @@
-import { Router } from 'express'
+// ============================================
+// Lab Routes
+// ============================================
+
+import { Router } from 'express';
 import {
-  // Test catalog
-  getTestCatalog,
-  getTestById,
-  createTest,
-  updateTest,
-  deleteTest,
-  
-  // Lab orders
-  createLabOrder,
-  getLabOrders,
-  getLabOrderById,
-  updateLabOrder,
-  cancelLabOrder,
-  getLabOrdersByPatient,
-  getPendingLabOrders,
-  
-  // Samples
+  createLabTest,
+  getLabTestById,
+  updateLabTest,
+  getLabTests,
+  getPendingLabTests,
   collectSample,
-  getSampleById,
-  updateSampleStatus,
-  getSamplesByOrder,
-  
-  // Results
   enterResults,
-  getResultById,
-  updateResult,
-  verifyResult,
-  getResultsByPatient,
-  getPendingResults,
-  
-  // Reports
-  printLabReport,
-  getLabStatistics
-} from '../controllers/labController'
-import { requireAuth } from '../middleware/auth'
-import { requirePermission } from '../middleware/role'
+  generateResultPDF,
+  getTestCatalog,
+  addTestToCatalog,
+  updateTestCatalog,
+  getTestCategories
+} from '../controllers/labController';
+import { requireAuth } from '../middleware/auth';
+import { requirePermission, requireAnyPermission } from '../middleware/role';
 
-const router = Router()
+const router = Router();
 
-// All routes require authentication
-router.use(requireAuth)
+// ==================== LAB TEST ROUTES ====================
 
-// Test catalog management
-router.get('/tests', requirePermission('lab.read'), getTestCatalog)
-router.get('/tests/:id', requirePermission('lab.read'), getTestById)
-router.post('/tests', requirePermission('lab.tests.write'), createTest)
-router.put('/tests/:id', requirePermission('lab.tests.write'), updateTest)
-router.delete('/tests/:id', requirePermission('lab.tests.write'), deleteTest)
+/**
+ * @route   POST /api/lab/tests
+ * @desc    Create lab test order
+ * @access  Private - lab.tests.write
+ */
+router.post(
+  '/tests',
+  requireAuth,
+  requirePermission('lab.tests.write'),
+  createLabTest
+);
 
-// Lab orders
-router.post('/orders', requirePermission('lab.tests.write'), createLabOrder)
-router.get('/orders', requirePermission('lab.read'), getLabOrders)
-router.get('/orders/pending', requirePermission('lab.read'), getPendingLabOrders)
-router.get('/orders/patient/:patientId', requirePermission('lab.read'), getLabOrdersByPatient)
-router.get('/orders/:id', requirePermission('lab.read'), getLabOrderById)
-router.put('/orders/:id', requirePermission('lab.tests.write'), updateLabOrder)
-router.delete('/orders/:id', requirePermission('lab.tests.write'), cancelLabOrder)
+/**
+ * @route   GET /api/lab/tests
+ * @desc    Get all lab tests (paginated)
+ * @access  Private - lab.tests.read
+ */
+router.get(
+  '/tests',
+  requireAuth,
+  requirePermission('lab.tests.read'),
+  getLabTests
+);
 
-// Sample management
-router.post('/orders/:orderId/samples', requirePermission('lab.tests.write'), collectSample)
-router.get('/samples/:id', requirePermission('lab.read'), getSampleById)
-router.put('/samples/:id/status', requirePermission('lab.tests.write'), updateSampleStatus)
-router.get('/orders/:orderId/samples', requirePermission('lab.read'), getSamplesByOrder)
+/**
+ * @route   GET /api/lab/tests/pending
+ * @desc    Get pending lab tests queue
+ * @access  Private - lab.tests.read
+ */
+router.get(
+  '/tests/pending',
+  requireAuth,
+  requirePermission('lab.tests.read'),
+  getPendingLabTests
+);
 
-// Results management
-router.post('/orders/:orderId/results', requirePermission('lab.results.write'), enterResults)
-router.get('/results/pending', requirePermission('lab.read'), getPendingResults)
-router.get('/results/patient/:patientId', requirePermission('lab.read'), getResultsByPatient)
-router.get('/results/:id', requirePermission('lab.read'), getResultById)
-router.put('/results/:id', requirePermission('lab.results.write'), updateResult)
-router.post('/results/:id/verify', requirePermission('lab.results.write'), verifyResult)
+/**
+ * @route   GET /api/lab/tests/:id
+ * @desc    Get lab test by ID
+ * @access  Private - lab.tests.read
+ */
+router.get(
+  '/tests/:id',
+  requireAuth,
+  requirePermission('lab.tests.read'),
+  getLabTestById
+);
 
-// Lab reports and statistics
-router.get('/orders/:orderId/print', requirePermission('lab.read'), printLabReport)
-router.get('/statistics', requirePermission('lab.read'), getLabStatistics)
+/**
+ * @route   PUT /api/lab/tests/:id
+ * @desc    Update lab test
+ * @access  Private - lab.tests.write or lab.results.write
+ */
+router.put(
+  '/tests/:id',
+  requireAuth,
+  requireAnyPermission('lab.tests.write', 'lab.results.write'),
+  updateLabTest
+);
 
-export default router
+/**
+ * @route   POST /api/lab/tests/:id/collect-sample
+ * @desc    Collect sample for lab test
+ * @access  Private - lab.tests.write
+ */
+router.post(
+  '/tests/:id/collect-sample',
+  requireAuth,
+  requirePermission('lab.tests.write'),
+  collectSample
+);
+
+/**
+ * @route   POST /api/lab/tests/:id/results
+ * @desc    Enter lab test results
+ * @access  Private - lab.results.write
+ */
+router.post(
+  '/tests/:id/results',
+  requireAuth,
+  requirePermission('lab.results.write'),
+  enterResults
+);
+
+/**
+ * @route   GET /api/lab/tests/:id/pdf
+ * @desc    Generate lab result PDF
+ * @access  Private - lab.results.read
+ */
+router.get(
+  '/tests/:id/pdf',
+  requireAuth,
+  requirePermission('lab.results.read'),
+  generateResultPDF
+);
+
+// ==================== TEST CATALOG ROUTES ====================
+
+/**
+ * @route   GET /api/lab/catalog
+ * @desc    Get test catalog
+ * @access  Private - lab.tests.read
+ */
+router.get(
+  '/catalog',
+  requireAuth,
+  requirePermission('lab.tests.read'),
+  getTestCatalog
+);
+
+/**
+ * @route   GET /api/lab/catalog/categories
+ * @desc    Get test categories
+ * @access  Private - lab.tests.read
+ */
+router.get(
+  '/catalog/categories',
+  requireAuth,
+  requirePermission('lab.tests.read'),
+  getTestCategories
+);
+
+/**
+ * @route   POST /api/lab/catalog
+ * @desc    Add test to catalog
+ * @access  Private - lab.tests.write (Admin/LabTech)
+ */
+router.post(
+  '/catalog',
+  requireAuth,
+  requirePermission('lab.tests.write'),
+  addTestToCatalog
+);
+
+/**
+ * @route   PUT /api/lab/catalog/:id
+ * @desc    Update test in catalog
+ * @access  Private - lab.tests.write
+ */
+router.put(
+  '/catalog/:id',
+  requireAuth,
+  requirePermission('lab.tests.write'),
+  updateTestCatalog
+);
+
+export default router;

@@ -62,7 +62,7 @@ class InvoiceService {
         .insert({
           invoice_number: invoiceNumber,
           patient_id: data.patientId,
-          visit_id: data.visitId,
+          visit_id: data.visitId || null,
           subtotal: subtotal,
           tax: tax,
           discount: data.discount || 0,
@@ -70,7 +70,7 @@ class InvoiceService {
           paid_amount: 0,
           balance_amount: totalAmount,
           status: 'pending',
-          notes: data.notes,
+          notes: data.notes || null,
           created_by: userId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -87,7 +87,7 @@ class InvoiceService {
       const invoiceItems = items.map(item => ({
         invoice_id: invoice.id,
         item_type: item.itemType,
-        item_id: item.itemId,
+        item_id: item.itemId || null,
         description: item.description,
         quantity: item.quantity,
         unit_price: item.unitPrice,
@@ -114,7 +114,7 @@ class InvoiceService {
         itemCount: items.length
       });
 
-      return { success: true, data: invoice };
+      return { success: true, data: invoice as Invoice };
     } catch (error) {
       logger.error('Invoice creation error:', error);
       return { success: false, error: 'Failed to create invoice' };
@@ -142,7 +142,7 @@ class InvoiceService {
         return null;
       }
 
-      return invoice;
+      return invoice as Invoice;
     } catch (error) {
       logger.error('Get invoice error:', error);
       return null;
@@ -170,7 +170,7 @@ class InvoiceService {
         return null;
       }
 
-      return invoice;
+      return invoice as Invoice;
     } catch (error) {
       logger.error('Get invoice by number error:', error);
       return null;
@@ -187,7 +187,10 @@ class InvoiceService {
     endDate?: string;
     page?: number;
     limit?: number;
-  }) {
+  }): Promise<{
+    data: Invoice[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     try {
       let query = supabase
         .from('invoices')
@@ -225,7 +228,7 @@ class InvoiceService {
       if (error) throw error;
 
       return {
-        data,
+        data: (data || []) as Invoice[],
         meta: {
           page,
           limit,
@@ -284,10 +287,10 @@ class InvoiceService {
           payment_number: paymentNumber,
           amount: amount,
           payment_method: paymentMethod,
-          payment_reference: options?.paymentReference,
-          mpesa_transaction_id: options?.mpesaTransactionId,
+          payment_reference: options?.paymentReference || null,
+          mpesa_transaction_id: options?.mpesaTransactionId || null,
           received_by: userId,
-          notes: options?.notes,
+          notes: options?.notes || null,
           created_at: new Date().toISOString()
         })
         .select()
@@ -375,7 +378,14 @@ class InvoiceService {
   /**
    * Get financial summary for a date range
    */
-  async getFinancialSummary(startDate: string, endDate: string) {
+  async getFinancialSummary(startDate: string, endDate: string): Promise<{
+    totalInvoiced: number;
+    totalCollected: number;
+    totalOutstanding: number;
+    paymentsByMethod: Record<string, number>;
+    invoiceCount: number;
+    paymentCount: number;
+  }> {
     try {
       // Get invoices in date range
       const { data: invoices } = await supabase

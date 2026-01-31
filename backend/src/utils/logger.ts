@@ -1,5 +1,5 @@
 // ============================================
-// Logger Configuration (Pino)
+// Logger Utility (Pino)
 // ============================================
 
 import pino from 'pino';
@@ -19,14 +19,9 @@ export const logger = pino({
         }
       },
   base: {
-    env: process.env.NODE_ENV || 'development'
+    pid: false
   },
   timestamp: pino.stdTimeFunctions.isoTime
 });
-
-// Create child loggers for different modules
-export const createLogger = (module: string) => {
-  return logger.child({ module });
-};
 
 export default logger;

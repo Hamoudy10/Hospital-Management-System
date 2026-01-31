@@ -404,6 +404,21 @@ export interface InvoiceItem {
   totalPrice: number;
 }
 
+export interface CreateInvoiceDTO {
+  patientId: string;
+  visitId?: string;
+  items: Array<{
+    itemType: 'consultation' | 'procedure' | 'lab_test' | 'drug' | 'other';
+    itemId?: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    discount?: number;
+  }>;
+  discount?: number;
+  notes?: string;
+}
+
 export interface Payment {
   id: string;
   invoiceId: string;

@@ -2,7 +2,7 @@
 // M-Pesa Integration Service (Daraja API)
 // ============================================
 
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
 import { MpesaC2BPayload } from '../types';
@@ -17,6 +17,11 @@ const MPESA_ENV = process.env.MPESA_ENV || 'sandbox';
 const BASE_URL = MPESA_ENV === 'production'
   ? 'https://api.safaricom.co.ke'
   : 'https://sandbox.safaricom.co.ke';
+
+interface MpesaErrorResponse {
+  errorMessage?: string;
+  errorCode?: string;
+}
 
 class MpesaService {
   private accessToken: string | null = null;
@@ -44,7 +49,7 @@ class MpesaService {
       // Token expires in 3599 seconds, refresh 5 minutes early
       this.tokenExpiry = Date.now() + (response.data.expires_in - 300) * 1000;
 
-      return this.accessToken;
+      return this.accessToken!;
     } catch (error) {
       logger.error('Failed to get M-Pesa access token:', error);
       throw new Error('Failed to authenticate with M-Pesa');
@@ -166,8 +171,8 @@ class MpesaService {
         responseDescription: response.data.ResponseDescription,
         error: response.data.errorMessage || 'STK Push failed'
       };
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { errorMessage?: string } } };
+    } catch (error) {
+      const axiosError = error as AxiosError<MpesaErrorResponse>;
       logger.error('STK Push error:', error);
       return {
         success: false,
@@ -254,13 +259,13 @@ class MpesaService {
           amount: parseFloat(payload.TransAmount),
           business_short_code: payload.BusinessShortCode,
           bill_ref_number: payload.BillRefNumber,
-          invoice_number: payload.InvoiceNumber,
+          invoice_number: payload.InvoiceNumber || null,
           org_account_balance: payload.OrgAccountBalance ? parseFloat(payload.OrgAccountBalance) : null,
-          third_party_trans_id: payload.ThirdPartyTransID,
+          third_party_trans_id: payload.ThirdPartyTransID || null,
           msisdn: payload.MSISDN,
-          first_name: payload.FirstName,
-          middle_name: payload.MiddleName,
-          last_name: payload.LastName,
+          first_name: payload.FirstName || null,
+          middle_name: payload.MiddleName || null,
+          last_name: payload.LastName || null,
           raw_payload: payload,
           status: 'pending',
           created_at: new Date().toISOString()
@@ -315,7 +320,7 @@ class MpesaService {
 
       // Create payment record
       const paymentNumber = `PAY-${Date.now()}`;
-      const { data: payment, error: paymentError } = await supabase
+      const { error: paymentError } = await supabase
         .from('payments')
         .insert({
           invoice_id: invoice.id,
@@ -326,9 +331,7 @@ class MpesaService {
           received_by: 'SYSTEM',
           notes: 'Auto-allocated from M-Pesa payment',
           created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+        });
 
       if (paymentError) {
         logger.error('Failed to create payment record:', paymentError);
@@ -450,7 +453,10 @@ class MpesaService {
   /**
    * Get unallocated M-Pesa transactions
    */
-  async getUnallocatedTransactions(page: number = 1, limit: number = 20) {
+  async getUnallocatedTransactions(page: number = 1, limit: number = 20): Promise<{
+    data: unknown[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     try {
       const offset = (page - 1) * limit;
 
@@ -464,7 +470,7 @@ class MpesaService {
       if (error) throw error;
 
       return {
-        data,
+        data: data || [],
         meta: {
           page,
           limit,
@@ -509,8 +515,8 @@ class MpesaService {
         success: false,
         error: response.data.ResponseDescription
       };
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { errorMessage?: string } } };
+    } catch (error) {
+      const axiosError = error as AxiosError<MpesaErrorResponse>;
       logger.error('C2B URL registration error:', error);
       return {
         success: false,

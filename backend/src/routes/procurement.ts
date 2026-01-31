@@ -1,93 +1,240 @@
-import { Router } from 'express'
+// ============================================
+// Procurement Routes
+// ============================================
+
+import { Router } from 'express';
 import {
-  // Suppliers
-  getSuppliers,
-  getSupplierById,
   createSupplier,
+  getSupplierById,
   updateSupplier,
+  getSuppliers,
   deleteSupplier,
-  getSupplierProducts,
-  
-  // Purchase orders
-  getPurchaseOrders,
-  getPurchaseOrderById,
   createPurchaseOrder,
+  getPurchaseOrderById,
   updatePurchaseOrder,
-  cancelPurchaseOrder,
+  getPurchaseOrders,
+  submitForApproval,
   approvePurchaseOrder,
   rejectPurchaseOrder,
-  getPendingApprovals,
-  
-  // Purchase order items
-  addPurchaseOrderItem,
-  updatePurchaseOrderItem,
-  removePurchaseOrderItem,
-  
-  // Receiving
-  receivePurchaseOrder,
-  getReceivingHistory,
-  
-  // Quotations
-  getQuotations,
-  getQuotationById,
-  createQuotationRequest,
-  submitQuotation,
-  compareQuotations,
-  selectQuotation,
-  
-  // Reports
-  getProcurementStatistics,
-  getSupplierPerformance,
-  getPurchaseHistory
-} from '../controllers/procurementController'
-import { requireAuth } from '../middleware/auth'
-import { requirePermission } from '../middleware/role'
+  markAsOrdered,
+  receiveItems,
+  cancelPurchaseOrder,
+  getPendingPurchaseOrders,
+  getStatistics
+} from '../controllers/procurementController';
+import { requireAuth } from '../middleware/auth';
+import { requirePermission, requireRole } from '../middleware/role';
 
-const router = Router()
+const router = Router();
 
-// All routes require authentication
-router.use(requireAuth)
+// ==================== SUPPLIER ROUTES ====================
 
-// Supplier management
-router.get('/suppliers', requirePermission('suppliers.read'), getSuppliers)
-router.get('/suppliers/:id', requirePermission('suppliers.read'), getSupplierById)
-router.post('/suppliers', requirePermission('suppliers.write'), createSupplier)
-router.put('/suppliers/:id', requirePermission('suppliers.write'), updateSupplier)
-router.delete('/suppliers/:id', requirePermission('suppliers.write'), deleteSupplier)
-router.get('/suppliers/:id/products', requirePermission('suppliers.read'), getSupplierProducts)
+/**
+ * @route   POST /api/procurement/suppliers
+ * @desc    Create new supplier
+ * @access  Private - suppliers.write
+ */
+router.post(
+  '/suppliers',
+  requireAuth,
+  requirePermission('suppliers.write'),
+  createSupplier
+);
 
-// Purchase orders
-router.get('/purchase-orders', requirePermission('purchase_orders.read'), getPurchaseOrders)
-router.get('/purchase-orders/pending-approval', requirePermission('purchase_orders.read'), getPendingApprovals)
-router.get('/purchase-orders/:id', requirePermission('purchase_orders.read'), getPurchaseOrderById)
-router.post('/purchase-orders', requirePermission('purchase_orders.write'), createPurchaseOrder)
-router.put('/purchase-orders/:id', requirePermission('purchase_orders.write'), updatePurchaseOrder)
-router.delete('/purchase-orders/:id', requirePermission('purchase_orders.write'), cancelPurchaseOrder)
+/**
+ * @route   GET /api/procurement/suppliers
+ * @desc    Get all suppliers (paginated)
+ * @access  Private - suppliers.read
+ */
+router.get(
+  '/suppliers',
+  requireAuth,
+  requirePermission('suppliers.read'),
+  getSuppliers
+);
 
-// Purchase order approval workflow
-router.post('/purchase-orders/:id/approve', requirePermission('purchase_orders.approve'), approvePurchaseOrder)
-router.post('/purchase-orders/:id/reject', requirePermission('purchase_orders.approve'), rejectPurchaseOrder)
+/**
+ * @route   GET /api/procurement/suppliers/:id
+ * @desc    Get supplier by ID
+ * @access  Private - suppliers.read
+ */
+router.get(
+  '/suppliers/:id',
+  requireAuth,
+  requirePermission('suppliers.read'),
+  getSupplierById
+);
 
-// Purchase order items
-router.post('/purchase-orders/:id/items', requirePermission('purchase_orders.write'), addPurchaseOrderItem)
-router.put('/purchase-orders/:id/items/:itemId', requirePermission('purchase_orders.write'), updatePurchaseOrderItem)
-router.delete('/purchase-orders/:id/items/:itemId', requirePermission('purchase_orders.write'), removePurchaseOrderItem)
+/**
+ * @route   PUT /api/procurement/suppliers/:id
+ * @desc    Update supplier
+ * @access  Private - suppliers.write
+ */
+router.put(
+  '/suppliers/:id',
+  requireAuth,
+  requirePermission('suppliers.write'),
+  updateSupplier
+);
 
-// Receiving
-router.post('/purchase-orders/:id/receive', requirePermission('inventory.write'), receivePurchaseOrder)
-router.get('/receiving/history', requirePermission('inventory.read'), getReceivingHistory)
+/**
+ * @route   DELETE /api/procurement/suppliers/:id
+ * @desc    Delete supplier (soft delete)
+ * @access  Private - suppliers.delete
+ */
+router.delete(
+  '/suppliers/:id',
+  requireAuth,
+  requirePermission('suppliers.delete'),
+  deleteSupplier
+);
 
-// Quotations
-router.get('/quotations', requirePermission('purchase_orders.read'), getQuotations)
-router.get('/quotations/:id', requirePermission('purchase_orders.read'), getQuotationById)
-router.post('/quotations/request', requirePermission('purchase_orders.write'), createQuotationRequest)
-router.post('/quotations/:id/submit', requirePermission('suppliers.write'), submitQuotation)
-router.get('/quotations/compare/:requestId', requirePermission('purchase_orders.read'), compareQuotations)
-router.post('/quotations/:id/select', requirePermission('purchase_orders.write'), selectQuotation)
+// ==================== PURCHASE ORDER ROUTES ====================
 
-// Reports and statistics
-router.get('/statistics', requirePermission('purchase_orders.read'), getProcurementStatistics)
-router.get('/suppliers/:id/performance', requirePermission('suppliers.read'), getSupplierPerformance)
-router.get('/reports/purchase-history', requirePermission('purchase_orders.read'), getPurchaseHistory)
+/**
+ * @route   POST /api/procurement/purchase-orders
+ * @desc    Create new purchase order
+ * @access  Private - purchase_orders.write
+ */
+router.post(
+  '/purchase-orders',
+  requireAuth,
+  requirePermission('purchase_orders.write'),
+  createPurchaseOrder
+);
 
-export default router
+/**
+ * @route   GET /api/procurement/purchase-orders
+ * @desc    Get all purchase orders (paginated)
+ * @access  Private - purchase_orders.read
+ */
+router.get(
+  '/purchase-orders',
+  requireAuth,
+  requirePermission('purchase_orders.read'),
+  getPurchaseOrders
+);
+
+/**
+ * @route   GET /api/procurement/purchase-orders/pending
+ * @desc    Get pending purchase orders
+ * @access  Private - purchase_orders.read
+ */
+router.get(
+  '/purchase-orders/pending',
+  requireAuth,
+  requirePermission('purchase_orders.read'),
+  getPendingPurchaseOrders
+);
+
+/**
+ * @route   GET /api/procurement/purchase-orders/:id
+ * @desc    Get purchase order by ID
+ * @access  Private - purchase_orders.read
+ */
+router.get(
+  '/purchase-orders/:id',
+  requireAuth,
+  requirePermission('purchase_orders.read'),
+  getPurchaseOrderById
+);
+
+/**
+ * @route   PUT /api/procurement/purchase-orders/:id
+ * @desc    Update purchase order
+ * @access  Private - purchase_orders.write
+ */
+router.put(
+  '/purchase-orders/:id',
+  requireAuth,
+  requirePermission('purchase_orders.write'),
+  updatePurchaseOrder
+);
+
+/**
+ * @route   POST /api/procurement/purchase-orders/:id/submit
+ * @desc    Submit PO for approval
+ * @access  Private - purchase_orders.write
+ */
+router.post(
+  '/purchase-orders/:id/submit',
+  requireAuth,
+  requirePermission('purchase_orders.write'),
+  submitForApproval
+);
+
+/**
+ * @route   POST /api/procurement/purchase-orders/:id/approve
+ * @desc    Approve purchase order
+ * @access  Private - Admin
+ */
+router.post(
+  '/purchase-orders/:id/approve',
+  requireAuth,
+  requireRole('admin'),
+  approvePurchaseOrder
+);
+
+/**
+ * @route   POST /api/procurement/purchase-orders/:id/reject
+ * @desc    Reject purchase order
+ * @access  Private - Admin
+ */
+router.post(
+  '/purchase-orders/:id/reject',
+  requireAuth,
+  requireRole('admin'),
+  rejectPurchaseOrder
+);
+
+/**
+ * @route   POST /api/procurement/purchase-orders/:id/mark-ordered
+ * @desc    Mark PO as ordered
+ * @access  Private - purchase_orders.write
+ */
+router.post(
+  '/purchase-orders/:id/mark-ordered',
+  requireAuth,
+  requirePermission('purchase_orders.write'),
+  markAsOrdered
+);
+
+/**
+ * @route   POST /api/procurement/purchase-orders/:id/receive
+ * @desc    Receive PO items
+ * @access  Private - inventory.write
+ */
+router.post(
+  '/purchase-orders/:id/receive',
+  requireAuth,
+  requirePermission('inventory.write'),
+  receiveItems
+);
+
+/**
+ * @route   POST /api/procurement/purchase-orders/:id/cancel
+ * @desc    Cancel purchase order
+ * @access  Private - purchase_orders.write
+ */
+router.post(
+  '/purchase-orders/:id/cancel',
+  requireAuth,
+  requirePermission('purchase_orders.write'),
+  cancelPurchaseOrder
+);
+
+// ==================== STATISTICS ====================
+
+/**
+ * @route   GET /api/procurement/statistics
+ * @desc    Get procurement statistics
+ * @access  Private - purchase_orders.read
+ */
+router.get(
+  '/statistics',
+  requireAuth,
+  requirePermission('purchase_orders.read'),
+  getStatistics
+);
+
+export default router;
