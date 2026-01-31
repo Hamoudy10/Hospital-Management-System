@@ -1,0 +1,254 @@
+@import "tailwindcss";
+
+/* Kenya HMS Color Palette */
+:root {
+  --primary: 224 66% 40%;
+  --primary-foreground: 0 0% 100%;
+  
+  --success: 108 55% 40%;
+  --success-foreground: 0 0% 100%;
+  
+  --warning: 28 80% 56%;
+  --warning-foreground: 0 0% 100%;
+  
+  --accent: 70 50% 61%;
+  --accent-foreground: 224 66% 20%;
+  
+  --purple: 318 25% 55%;
+  --purple-foreground: 0 0% 100%;
+  
+  --muted: 228 10% 50%;
+  --muted-foreground: 0 0% 100%;
+  
+  --destructive: 348 75% 35%;
+  --destructive-foreground: 0 0% 100%;
+  
+  --background: 0 0% 100%;
+  --foreground: 224 66% 20%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 224 66% 20%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 66% 20%;
+  
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 224 66% 20%;
+  
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 224 66% 40%;
+  
+  --radius: 0.5rem;
+  
+  --sidebar-width: 280px;
+  --header-height: 64px;
+}
+
+.dark {
+  --background: 224 66% 10%;
+  --foreground: 0 0% 95%;
+  
+  --card: 224 66% 12%;
+  --card-foreground: 0 0% 95%;
+  
+  --popover: 224 66% 12%;
+  --popover-foreground: 0 0% 95%;
+  
+  --secondary: 224 30% 20%;
+  --secondary-foreground: 0 0% 95%;
+  
+  --border: 224 30% 25%;
+  --input: 224 30% 25%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--secondary));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    font-size: 12pt;
+    color: black;
+    background: white;
+  }
+}
+
+/* A5 Receipt Printing */
+@page receipt {
+  size: A5;
+  margin: 10mm;
+}
+
+.receipt-print {
+  page: receipt;
+}
+
+/* Animation utilities */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Status colors */
+.status-active {
+  color: hsl(var(--success));
+}
+
+.status-pending {
+  color: hsl(var(--warning));
+}
+
+.status-cancelled {
+  color: hsl(var(--destructive));
+}
+
+.status-completed {
+  color: hsl(var(--primary));
+}
+
+/* Kenya HMS specific colors */
+.bg-hms-primary {
+  background-color: #2438a6;
+}
+
+.bg-hms-success {
+  background-color: #41a02f;
+}
+
+.bg-hms-warning {
+  background-color: #e88b39;
+}
+
+.bg-hms-accent {
+  background-color: #ccd563;
+}
+
+.bg-hms-purple {
+  background-color: #a06695;
+}
+
+.bg-hms-muted {
+  background-color: #70748d;
+}
+
+.bg-hms-danger {
+  background-color: #9b162d;
+}
+
+.text-hms-primary {
+  color: #2438a6;
+}
+
+.text-hms-success {
+  color: #41a02f;
+}
+
+.text-hms-warning {
+  color: #e88b39;
+}
+
+.text-hms-accent {
+  color: #ccd563;
+}
+
+.text-hms-purple {
+  color: #a06695;
+}
+
+.text-hms-muted {
+  color: #70748d;
+}
+
+.text-hms-danger {
+  color: #9b162d;
+}
+
+.border-hms-primary {
+  border-color: #2438a6;
+}
+
+.border-hms-success {
+  border-color: #41a02f;
+}
+
+.border-hms-warning {
+  border-color: #e88b39;
+}
