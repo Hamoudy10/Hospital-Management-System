@@ -30,7 +30,7 @@ export const GET = withPermission(
   "view",
   async (request, { user, params }) => {
     const classId = params?.id;
-    if (!classId) return notFoundResponse("Class ID required");
+    if (!classId) {return notFoundResponse("Class ID required");}
 
     const idValidation = validateUuid(classId);
     if (!idValidation.success) {

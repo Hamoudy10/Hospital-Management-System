@@ -1,0 +1,4 @@
+
+> cbc-school-management-system@1.0.0 lint
+> next lint
+

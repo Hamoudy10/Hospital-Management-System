@@ -50,10 +50,14 @@ export function validateBody<T>(
   input: NextRequest | unknown,
   schema: ZodSchema<T> | any,
 ): Promise<ValidationResult<T>> | ValidationResult<T> {
-  if (input instanceof NextRequest) {
+  const isRequestLike =
+    typeof (input as any)?.json === "function" &&
+    typeof (input as any)?.headers === "object";
+
+  if (input instanceof NextRequest || isRequestLike) {
     return (async () => {
       try {
-        const body = await input.json();
+        const body = await (input as NextRequest).json();
         const data = schema.parse(body);
         return { success: true, data, error: "" };
       } catch (error) {

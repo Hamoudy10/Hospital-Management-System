@@ -21,7 +21,7 @@ async function getAuthenticatedUser(supabase: Awaited<ReturnType<typeof createSu
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();
-  if (!authUser) return null;
+  if (!authUser) {return null;}
 
   const { data: user } = await supabase
     .from('users')
@@ -29,7 +29,7 @@ async function getAuthenticatedUser(supabase: Awaited<ReturnType<typeof createSu
     .eq('user_id', authUser.id)
     .single();
 
-  if (!user?.school_id) return null;
+  if (!user?.school_id) {return null;}
 
   return {
     userId: user.user_id as string,
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const authUser = await getAuthenticatedUser(supabase);
-    if (!authUser) return errorResponse('Unauthorized', 401);
+    if (!authUser) {return errorResponse('Unauthorized', 401);}
 
     const { searchParams } = new URL(req.url);
     const filters: TimetableFilters = {};
@@ -54,11 +54,11 @@ export async function GET(req: NextRequest) {
     const learningAreaId = searchParams.get('learning_area_id');
     const termId = searchParams.get('term_id');
 
-    if (classId) filters.classId = classId;
-    if (teacherId) filters.teacherId = teacherId;
-    if (dayOfWeek) filters.dayOfWeek = dayOfWeek as TimetableFilters['dayOfWeek'];
-    if (learningAreaId) filters.learningAreaId = learningAreaId;
-    if (termId) filters.termId = termId;
+    if (classId) {filters.classId = classId;}
+    if (teacherId) {filters.teacherId = teacherId;}
+    if (dayOfWeek) {filters.dayOfWeek = dayOfWeek as TimetableFilters['dayOfWeek'];}
+    if (learningAreaId) {filters.learningAreaId = learningAreaId;}
+    if (termId) {filters.termId = termId;}
 
     // Teacher role: default to their own timetable
     if (
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const authUser = await getAuthenticatedUser(supabase);
-    if (!authUser) return errorResponse('Unauthorized', 401);
+    if (!authUser) {return errorResponse('Unauthorized', 401);}
 
     const allowedRoles = [
       'super_admin',
@@ -175,7 +175,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const authUser = await getAuthenticatedUser(supabase);
-    if (!authUser) return errorResponse('Unauthorized', 401);
+    if (!authUser) {return errorResponse('Unauthorized', 401);}
 
     const allowedRoles = [
       'super_admin',
@@ -218,7 +218,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const authUser = await getAuthenticatedUser(supabase);
-    if (!authUser) return errorResponse('Unauthorized', 401);
+    if (!authUser) {return errorResponse('Unauthorized', 401);}
 
     const allowedRoles = [
       'super_admin',

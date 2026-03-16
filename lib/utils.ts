@@ -49,7 +49,7 @@ export function formatPercentage(value: number, decimals = 1): string {
  * Truncate text with ellipsis
  */
 export function truncate(str: string, length: number): string {
-  if (str.length <= length) return str;
+  if (str.length <= length) {return str;}
   return `${str.slice(0, length)}...`;
 }
 
@@ -75,7 +75,7 @@ export function debounce<T extends (...args: any[]) => any>(
   let timeout: NodeJS.Timeout | null = null;
 
   return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout);
+    if (timeout) {clearTimeout(timeout);}
     timeout = setTimeout(() => func(...args), wait);
   };
 }

@@ -23,14 +23,18 @@ const nextConfig = {
     ],
   },
 
-  // Experimental features
+        // Experimental features
   experimental: {
     // Enable server actions
     serverActions: {
       bodySizeLimit: "2mb",
     },
-    optimizePackageImports: ["lucide-react"],
+    // Optimize package imports
+    optimizePackageImports: ["lucide-react", "@supabase/supabase-js", "react-hook-form"],
   },
+  
+  // Enable SWC minification for faster builds
+  swcMinify: true,
 
   // Headers for security
   async headers() {

@@ -57,7 +57,7 @@ export const POST = withPermission(
         201,
       );
     } catch (error: any) {
-      if (error.name === "ZodError") return errorResponse(error.errors, 422);
+      if (error.name === "ZodError") {return errorResponse(error.errors, 422);}
       return errorResponse(error.message, 500);
     }
   },

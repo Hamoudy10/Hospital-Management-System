@@ -24,7 +24,7 @@ import {
 // ============================================================
 export const GET = withAuth(async (request, { user, params }) => {
   const id = params?.id;
-  if (!id) return notFoundResponse("User ID required");
+  if (!id) {return notFoundResponse("User ID required");}
 
   const validation = validateUuid(id);
   if (!validation.success) {
@@ -45,7 +45,7 @@ export const GET = withAuth(async (request, { user, params }) => {
 // ============================================================
 export const PUT = withAuth(async (request, { user, params }) => {
   const id = params?.id;
-  if (!id) return notFoundResponse("User ID required");
+  if (!id) {return notFoundResponse("User ID required");}
 
   const idValidation = validateUuid(id);
   if (!idValidation.success) {

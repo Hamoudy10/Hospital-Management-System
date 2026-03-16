@@ -45,7 +45,7 @@ export async function generateMetadata({
 // ============================================================
 async function getStaffForEdit(staffId: string) {
   const user = await getCurrentUser();
-  if (!user || !user.schoolId) redirect('/login');
+  if (!user?.schoolId) {redirect('/login');}
 
   const supabase = await createSupabaseServerClient();
 
@@ -74,6 +74,9 @@ async function getStaffForEdit(staffId: string) {
         roles!inner (
           role_id,
           name
+        ),
+        user_profiles (
+          photo_url
         )
       )
     `
@@ -106,6 +109,7 @@ async function getStaffForEdit(staffId: string) {
   }
 
   const userData = staffData.users as any;
+  const profile = userData?.user_profiles?.[0] || {};
 
   return {
     staff: {
@@ -125,6 +129,7 @@ async function getStaffForEdit(staffId: string) {
       contractType: staffData.contract_type as ContractType | null,
       qualification: staffData.qualification,
       status: staffData.status as StaffStatus,
+      photoUrl: profile.photo_url || null,
     },
     roles: roles || [],
   };

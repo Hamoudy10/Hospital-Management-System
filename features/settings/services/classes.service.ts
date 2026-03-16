@@ -215,6 +215,9 @@ export async function updateClass(
   };
 
   if (input.name !== undefined) updateData.name = input.name;
+  if (input.stream !== undefined) {
+    updateData.stream = input.stream === "" ? null : input.stream;
+  }
   if (input.capacity !== undefined) updateData.capacity = input.capacity;
   if (input.status !== undefined) updateData.is_active = input.status === "active";
 

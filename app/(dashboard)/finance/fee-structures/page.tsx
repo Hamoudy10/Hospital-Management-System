@@ -606,7 +606,7 @@ function BulkAssignModal({
     ? classes.filter((c) => c.gradeId === watchGradeId)
     : classes;
 
-  if (!feeStructure) return null;
+  if (!feeStructure) {return null;}
 
   return (
     <Modal
@@ -1044,7 +1044,7 @@ export default function FeeStructuresPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteStructure) return;
+    if (!deleteStructure) {return;}
 
     setIsSubmitting(true);
 

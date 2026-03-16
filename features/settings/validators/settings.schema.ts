@@ -47,6 +47,29 @@ export const createAcademicYearSchema = z
     path: ["end_date"],
   });
 
+export const updateAcademicYearSchema = z
+  .object({
+    year: z.string().regex(/^\d{4}$/, "Year must be 4-digit format").optional(),
+    start_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD")
+      .optional(),
+    end_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD")
+      .optional(),
+  })
+  .refine(
+    (data) =>
+      !data.start_date ||
+      !data.end_date ||
+      data.start_date < data.end_date,
+    {
+      message: "End date must be after start date",
+      path: ["end_date"],
+    },
+  );
+
 export const createTermSchema = z
   .object({
     academic_year_id: z.string().uuid("Invalid academic year ID"),
@@ -58,6 +81,23 @@ export const createTermSchema = z
     message: "End date must be after start date",
     path: ["end_date"],
   });
+
+export const updateTermSchema = z
+  .object({
+    name: z.enum(["Term 1", "Term 2", "Term 3"]).optional(),
+    start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  })
+  .refine(
+    (data) =>
+      !data.start_date ||
+      !data.end_date ||
+      data.start_date < data.end_date,
+    {
+      message: "End date must be after start date",
+      path: ["end_date"],
+    },
+  );
 
 export const createClassSchema = z.object({
   name: z.string().min(1, "Class name is required").max(50),
@@ -74,6 +114,7 @@ export const createClassSchema = z.object({
 
 export const updateClassSchema = z.object({
   name: z.string().min(1).max(50).optional(),
+  stream: z.string().max(20).optional().or(z.literal("")),
   capacity: z.number().int().min(1).max(100).optional(),
   class_teacher_id: z.string().uuid().optional().or(z.literal("")),
   status: z.enum(["active", "inactive"]).optional(),
@@ -122,7 +163,9 @@ export type UpdateSchoolProfileInput = z.infer<
   typeof updateSchoolProfileSchema
 >;
 export type CreateAcademicYearInput = z.infer<typeof createAcademicYearSchema>;
+export type UpdateAcademicYearInput = z.infer<typeof updateAcademicYearSchema>;
 export type CreateTermInput = z.infer<typeof createTermSchema>;
+export type UpdateTermInput = z.infer<typeof updateTermSchema>;
 export type CreateClassInput = z.infer<typeof createClassSchema>;
 export type UpdateClassInput = z.infer<typeof updateClassSchema>;
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;

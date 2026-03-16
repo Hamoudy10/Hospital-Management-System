@@ -100,7 +100,7 @@ export function withPermission(
   actionOrHandler: ActionName | "edit" | AuthenticatedHandler,
   maybeHandler?: AuthenticatedHandler,
 ) {
-  const module =
+  const moduleName =
     typeof moduleOrConfig === "object" ? moduleOrConfig.module : moduleOrConfig;
   const rawAction =
     typeof moduleOrConfig === "object"
@@ -118,7 +118,7 @@ export function withPermission(
     { params }: RouteParams = { params: {} },
   ): Promise<NextResponse> => {
     try {
-      const authResult = await authorizeRequest(module, action);
+      const authResult = await authorizeRequest(moduleName, action);
 
       if (!authResult.authorized) {
         return authResult.response;

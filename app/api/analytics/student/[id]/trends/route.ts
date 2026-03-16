@@ -28,7 +28,7 @@ const querySchema = z.object({
 // ============================================================
 export const GET = withAuth(async (request, { user, params }) => {
   const studentId = params?.id;
-  if (!studentId) return notFoundResponse("Student ID required");
+  if (!studentId) {return notFoundResponse("Student ID required");}
 
   const idValidation = validateUuid(studentId);
   if (!idValidation.success) {

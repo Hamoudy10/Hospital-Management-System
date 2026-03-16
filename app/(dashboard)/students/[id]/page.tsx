@@ -508,7 +508,7 @@ export default function StudentDetailPage() {
 
   // ─── Fetch Related Data ────────────────────────────────────
   const fetchRelatedData = useCallback(async () => {
-    if (!student) return;
+    if (!student) {return;}
 
     try {
       // Fetch class history

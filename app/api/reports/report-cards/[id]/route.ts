@@ -26,7 +26,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 // ============================================================
 export const GET = withAuth(async (request, { user, params }) => {
   const id = params?.id;
-  if (!id) return notFoundResponse("Report card ID required");
+  if (!id) {return notFoundResponse("Report card ID required");}
 
   const validation = validateUuid(id);
   if (!validation.success) {
@@ -84,7 +84,7 @@ export const PUT = withPermission(
   "update",
   async (request, { user, params }) => {
     const id = params?.id;
-    if (!id) return notFoundResponse("Report card ID required");
+    if (!id) {return notFoundResponse("Report card ID required");}
 
     const idValidation = validateUuid(id);
     if (!idValidation.success) {

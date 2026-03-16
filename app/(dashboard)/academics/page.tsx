@@ -40,8 +40,8 @@ async function getAcademicData(schoolId: string) {
 
 export default async function AcademicsPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  if (!user.schoolId) redirect("/login");
+  if (!user) {redirect("/login");}
+  if (!user.schoolId) {redirect("/login");}
 
   const academicData = await getAcademicData(user.schoolId);
 

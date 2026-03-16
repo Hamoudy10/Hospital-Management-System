@@ -5,8 +5,7 @@ import { NextRequest } from "next/server";
 import { withPermission } from "@/lib/api/withAuth";
 import { paginatedResponse, errorResponse } from "@/lib/api/response";
 import { validateSearchParams } from "@/lib/api/validation";
-import { ReportsService } from "@/features/reports";
-import { reportFilterSchema } from "@/features/reports";
+import { ReportsService, reportFilterSchema } from "@/features/reports";
 
 export const GET = withPermission(
   "reports",

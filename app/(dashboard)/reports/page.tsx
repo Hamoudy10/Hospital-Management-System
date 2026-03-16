@@ -100,11 +100,11 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warni
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 function getPerformanceLevelKey(level: string | null): string {
-  if (!level) return 'below';
+  if (!level) {return 'below';}
   const normalized = level.toLowerCase().trim();
-  if (normalized.includes('exceed')) return 'exceeding';
-  if (normalized.includes('meet')) return 'meeting';
-  if (normalized.includes('approach')) return 'approaching';
+  if (normalized.includes('exceed')) {return 'exceeding';}
+  if (normalized.includes('meet')) {return 'meeting';}
+  if (normalized.includes('approach')) {return 'approaching';}
   return 'below';
 }
 
@@ -117,7 +117,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();
-  if (!authUser) redirect('/login');
+  if (!authUser) {redirect('/login');}
 
   // 2. Fetch user with role
   const { data: userData } = await supabase
@@ -127,7 +127,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
     .single();
   const user = userData as any;
 
-  if (!user || !user.school_id) redirect('/login');
+  if (!user?.school_id) {redirect('/login');}
 
   const roleName = (user.roles as Record<string, string>)?.name ?? 'student';
   const schoolId = user.school_id;

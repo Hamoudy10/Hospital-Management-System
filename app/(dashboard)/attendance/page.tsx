@@ -1,7 +1,8 @@
-// app/(dashboard)/attendance/page.tsx
+﻿// app/(dashboard)/attendance/page.tsx
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   Calendar,
@@ -14,6 +15,7 @@ import {
   XCircle,
   RefreshCw,
   Download,
+  Upload,
   ChevronLeft,
   ChevronRight,
   Save,
@@ -41,8 +43,9 @@ import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/compon
 import { Tabs, TabsList, TabTrigger, TabContent } from '@/components/ui/Tabs';
 import { useToast } from '@/components/ui/Toast';
 import { cn, formatDate } from '@/lib/utils';
+import type { ClassAttendanceSummary, WeeklyTrend } from './types';
 
-// ─── Types ───────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 
 interface StudentAttendance {
@@ -73,28 +76,8 @@ interface AttendanceStats {
   attendanceRate: number;
 }
 
-interface ClassAttendanceSummary {
-  classId: string;
-  className: string;
-  gradeName: string;
-  totalStudents: number;
-  present: number;
-  absent: number;
-  late: number;
-  excused: number;
-  rate: number;
-  recorded: boolean;
-}
 
-interface WeeklyTrend {
-  date: string;
-  dayName: string;
-  rate: number;
-  present: number;
-  total: number;
-}
-
-// ─── Constants ───────────────────────────────────────────────
+// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const STATUS_CONFIG: Record<
   AttendanceStatus,
   { label: string; icon: React.ReactNode; color: string; bgColor: string }
@@ -127,7 +110,7 @@ const STATUS_CONFIG: Record<
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// ─── Helper Functions ────────────────────────────────────────
+// â”€â”€â”€ Helper Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function formatDateForAPI(date: Date): string {
   return date.toISOString().split('T')[0];
 }
@@ -145,7 +128,7 @@ function getWeekDates(date: Date): Date[] {
   return dates;
 }
 
-// ─── Stat Card Component ─────────────────────────────────────
+// â”€â”€â”€ Stat Card Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface StatCardProps {
   title: string;
   value: number | string;
@@ -200,7 +183,7 @@ function StatCard({ title, value, subtitle, icon, color, trend }: StatCardProps)
   );
 }
 
-// ─── Attendance Rate Ring ────────────────────────────────────
+// â”€â”€â”€ Attendance Rate Ring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AttendanceRateRing({ rate, size = 120 }: { rate: number; size?: number }) {
   const radius = (size - 16) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -243,7 +226,7 @@ function AttendanceRateRing({ rate, size = 120 }: { rate: number; size?: number 
   );
 }
 
-// ─── Quick Status Button ─────────────────────────────────────
+// â”€â”€â”€ Quick Status Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface QuickStatusButtonProps {
   status: AttendanceStatus;
   isSelected: boolean;
@@ -278,7 +261,7 @@ function QuickStatusButton({
   );
 }
 
-// ─── Roll Call Grid Component ────────────────────────────────
+// â”€â”€â”€ Roll Call Grid Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface RollCallGridProps {
   students: StudentAttendance[];
   onStatusChange: (studentId: string, status: AttendanceStatus, reason?: string) => void;
@@ -301,7 +284,7 @@ function RollCallGrid({
   const [reason, setReason] = useState('');
 
   const filteredStudents = useMemo(() => {
-    if (!searchTerm) return students;
+    if (!searchTerm) {return students;}
     const term = searchTerm.toLowerCase();
     return students.filter(
       (s) =>
@@ -518,121 +501,36 @@ function RollCallGrid({
   );
 }
 
-// ─── Class Summary Card ──────────────────────────────────────
-function ClassSummaryCard({
-  summary,
-  isSelected,
-  onClick,
-}: {
-  summary: ClassAttendanceSummary;
-  isSelected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'w-full rounded-lg border-2 p-4 text-left transition-all',
-        isSelected
-          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-      )}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="font-semibold text-gray-900">{summary.className}</p>
-          <p className="text-sm text-gray-500">{summary.gradeName}</p>
-        </div>
-        {summary.recorded ? (
-          <Badge variant="success">Recorded</Badge>
-        ) : (
-          <Badge variant="warning">Pending</Badge>
-        )}
-      </div>
+// â”€â”€â”€ Class Summary Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ Weekly Trend Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ Main Page Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const ClassSummaryCard = dynamic(
+  () =>
+    import('./components/ClassSummaryCard').then((mod) => mod.ClassSummaryCard),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-24 w-full rounded-lg border border-gray-200 bg-gray-50 animate-pulse" />
+    ),
+  }
+);
 
-      <div className="mt-3 flex items-center gap-4">
-        <div className="flex items-center gap-1 text-sm">
-          <div className="h-2 w-2 rounded-full bg-green-500" />
-          <span className="text-gray-600">{summary.present}</span>
-        </div>
-        <div className="flex items-center gap-1 text-sm">
-          <div className="h-2 w-2 rounded-full bg-red-500" />
-          <span className="text-gray-600">{summary.absent}</span>
-        </div>
-        <div className="flex items-center gap-1 text-sm">
-          <div className="h-2 w-2 rounded-full bg-amber-500" />
-          <span className="text-gray-600">{summary.late}</span>
-        </div>
-        <div className="ml-auto text-right">
-          <span
-            className={cn(
-              'text-lg font-bold',
-              summary.rate >= 90
-                ? 'text-green-600'
-                : summary.rate >= 75
-                  ? 'text-amber-600'
-                  : 'text-red-600'
-            )}
-          >
-            {summary.rate.toFixed(0)}%
-          </span>
-        </div>
-      </div>
-    </button>
-  );
-}
+const WeeklyTrendChart = dynamic(
+  () => import('./components/WeeklyTrendChart').then((mod) => mod.WeeklyTrendChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-40 w-full rounded-lg border border-gray-200 bg-gray-50 animate-pulse" />
+    ),
+  }
+);
 
-// ─── Weekly Trend Chart ──────────────────────────────────────
-function WeeklyTrendChart({ data }: { data: WeeklyTrend[] }) {
-  const maxRate = Math.max(...data.map((d) => d.rate), 100);
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">This Week&apos;s Trend</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-end justify-between gap-2 h-32">
-          {data.map((day, idx) => (
-            <div
-              key={idx}
-              className="flex flex-1 flex-col items-center gap-1"
-            >
-              <span className="text-xs font-medium text-gray-900">
-                {day.rate > 0 ? `${day.rate.toFixed(0)}%` : '-'}
-              </span>
-              <div
-                className={cn(
-                  'w-full rounded-t transition-all',
-                  day.rate >= 90
-                    ? 'bg-green-500'
-                    : day.rate >= 75
-                      ? 'bg-amber-500'
-                      : day.rate > 0
-                        ? 'bg-red-500'
-                        : 'bg-gray-200'
-                )}
-                style={{
-                  height: `${(day.rate / maxRate) * 100}%`,
-                  minHeight: day.rate > 0 ? '8px' : '4px',
-                }}
-              />
-              <span className="text-xs text-gray-500">{day.dayName}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Main Page Component ─────────────────────────────────────
 export default function AttendancePage() {
   const router = useRouter();
   const { user, checkPermission } = useAuth();
   const { success, error } = useToast();
 
-  // ─── State ─────────────────────────────────────────────────
+  // â”€â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
@@ -645,15 +543,16 @@ export default function AttendancePage() {
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const studentsFetchRef = useRef<AbortController | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('roll-call');
 
-  // ─── Permissions ───────────────────────────────────────────
+  // â”€â”€â”€ Permissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const canRecordAttendance = checkPermission('attendance', 'create');
   const canViewAllClasses = checkPermission('attendance', 'view');
 
-  // ─── Date Navigation ───────────────────────────────────────
+  // â”€â”€â”€ Date Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const isToday = formatDateForAPI(selectedDate) === formatDateForAPI(new Date());
   const isFuture = selectedDate > new Date();
 
@@ -683,7 +582,7 @@ export default function AttendancePage() {
     setSelectedDate(new Date());
   };
 
-  // ─── Fetch Data ────────────────────────────────────────────
+  // â”€â”€â”€ Fetch Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fetchClasses = useCallback(async () => {
     try {
       const response = await fetch('/api/settings/classes?hasStudents=true', {
@@ -782,14 +681,20 @@ export default function AttendancePage() {
   }, [selectedDate]);
 
   const fetchStudents = useCallback(async () => {
-    if (!selectedClassId) return;
+    if (!selectedClassId) {return;}
 
     setIsLoadingStudents(true);
     try {
+      if (studentsFetchRef.current) {
+        studentsFetchRef.current.abort();
+      }
+      const controller = new AbortController();
+      studentsFetchRef.current = controller;
+
       const dateStr = formatDateForAPI(selectedDate);
       const response = await fetch(
         `/api/attendance/class/${selectedClassId}?date=${dateStr}`,
-        { credentials: 'include' }
+        { credentials: 'include', signal: controller.signal }
       );
 
       if (response.ok) {
@@ -808,6 +713,9 @@ export default function AttendancePage() {
         );
       }
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       console.error('Failed to fetch students:', err);
       error('Error', 'Failed to load student attendance.');
     } finally {
@@ -815,21 +723,37 @@ export default function AttendancePage() {
     }
   }, [selectedClassId, selectedDate]);
 
-  // ─── Effects ───────────────────────────────────────────────
+    // â”€â”€â”€ Effects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const loadInitialData = async () => {
       setIsLoading(true);
-      await Promise.all([
-        fetchClasses(),
-        fetchTodayStats(),
-        fetchClassSummaries(),
-        fetchWeeklyTrend(),
-      ]);
+      
+      // Stagger requests to avoid overloading
+      // 1. First load classes (needed for dropdown)
+      await fetchClasses();
+      
+      // 2. Then load today's stats (important for dashboard)
+      await fetchTodayStats();
+      
+      // 3. Then load summaries and trends after delay
+      setTimeout(() => {
+        fetchClassSummaries();
+        fetchWeeklyTrend();
+      }, 500);
+      
       setIsLoading(false);
     };
 
     loadInitialData();
   }, [fetchClasses, fetchTodayStats, fetchClassSummaries, fetchWeeklyTrend]);
+
+  useEffect(() => {
+    return () => {
+      if (studentsFetchRef.current) {
+        studentsFetchRef.current.abort();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedClassId) {
@@ -843,7 +767,7 @@ export default function AttendancePage() {
     fetchClassSummaries();
   }, [selectedDate, fetchTodayStats, fetchClassSummaries]);
 
-  // ─── Handlers ──────────────────────────────────────────────
+  // â”€â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleStatusChange = (
     studentId: string,
     status: AttendanceStatus,
@@ -867,7 +791,7 @@ export default function AttendancePage() {
   };
 
   const handleSave = async () => {
-    if (!selectedClassId || students.length === 0) return;
+    if (!selectedClassId || students.length === 0) {return;}
 
     setIsSaving(true);
     try {
@@ -901,7 +825,9 @@ export default function AttendancePage() {
       setHasChanges(false);
 
       // Refresh stats
-      await Promise.all([fetchTodayStats(), fetchClassSummaries()]);
+      await fetchTodayStats();
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await fetchClassSummaries();
     } catch (err) {
       error('Error', 'Failed to save attendance. Please try again.');
     } finally {
@@ -937,7 +863,7 @@ export default function AttendancePage() {
     }
   };
 
-  // ─── Render ────────────────────────────────────────────────
+  // â”€â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!user) {
     return null;
   }
@@ -953,14 +879,22 @@ export default function AttendancePage() {
     );
   }
 
-  return (
+    return (
     <div className="space-y-6">
-      {/* ── Page Header ─────────────────────────────────────── */}
+      {/* â”€â”€ Page Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <PageHeader
         title="Attendance"
         description="Record and manage daily student attendance"
       >
         <div className="flex items-center gap-2">
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => router.push('/attendance/import')}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Import
+          </Button>
           <Button variant="secondary" size="sm" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Export
@@ -979,7 +913,7 @@ export default function AttendancePage() {
         </div>
       </PageHeader>
 
-      {/* ── Date Selector ───────────────────────────────────── */}
+      {/* â”€â”€ Date Selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
@@ -1043,7 +977,7 @@ export default function AttendancePage() {
         </CardContent>
       </Card>
 
-      {/* ── Stats Cards ─────────────────────────────────────── */}
+      {/* â”€â”€ Stats Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {todayStats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard
@@ -1079,7 +1013,7 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* ── Tabs ────────────────────────────────────────────── */}
+      {/* â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabTrigger value="roll-call">Roll Call</TabTrigger>
@@ -1087,7 +1021,7 @@ export default function AttendancePage() {
           <TabTrigger value="trends">Trends</TabTrigger>
         </TabsList>
 
-        {/* ── Roll Call Tab ───────────────────────────────── */}
+        {/* â”€â”€ Roll Call Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <TabContent value="roll-call" className="mt-6">
           {selectedClassId ? (
             isLoadingStudents ? (
@@ -1129,7 +1063,7 @@ export default function AttendancePage() {
           )}
         </TabContent>
 
-        {/* ── Overview Tab ────────────────────────────────── */}
+        {/* â”€â”€ Overview Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <TabContent value="overview" className="mt-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {classSummaries.map((summary) => (
@@ -1160,7 +1094,7 @@ export default function AttendancePage() {
           )}
         </TabContent>
 
-        {/* ── Trends Tab ──────────────────────────────────── */}
+        {/* â”€â”€ Trends Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <TabContent value="trends" className="mt-6">
           <div className="grid gap-6 lg:grid-cols-2">
             <WeeklyTrendChart data={weeklyTrend} />
@@ -1217,7 +1151,7 @@ export default function AttendancePage() {
         </TabContent>
       </Tabs>
 
-      {/* ── Unsaved Changes Warning ─────────────────────────── */}
+      {/* â”€â”€ Unsaved Changes Warning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {hasChanges && (
         <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 transform">
           <div className="flex items-center gap-3 rounded-lg bg-amber-50 px-4 py-3 shadow-lg ring-1 ring-amber-200">
@@ -1239,3 +1173,5 @@ export default function AttendancePage() {
     </div>
   );
 }
+
+

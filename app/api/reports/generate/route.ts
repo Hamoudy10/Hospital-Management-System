@@ -28,9 +28,9 @@ function errorResponse(message: string, status: number = 400) {
  * Maps a numeric average score (1–4 CBC scale) to a performance level label.
  */
 function getPerformanceLevel(score: number): string {
-  if (score >= 3.5) return 'Exceeding Expectations';
-  if (score >= 2.5) return 'Meeting Expectations';
-  if (score >= 1.5) return 'Approaching Expectations';
+  if (score >= 3.5) {return 'Exceeding Expectations';}
+  if (score >= 2.5) {return 'Meeting Expectations';}
+  if (score >= 1.5) {return 'Approaching Expectations';}
   return 'Below Expectations';
 }
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();
-  if (!authUser) return errorResponse('Unauthorized', 401);
+  if (!authUser) {return errorResponse('Unauthorized', 401);}
 
   // 2. Get user with role and school
   const { data: user } = await supabase
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     .eq('user_id', authUser.id)
     .single();
 
-  if (!user?.school_id) return errorResponse('Forbidden', 403);
+  if (!user?.school_id) {return errorResponse('Forbidden', 403);}
 
   const roleName = (user.roles as Record<string, string>)?.name ?? 'student';
   const schoolId = user.school_id;

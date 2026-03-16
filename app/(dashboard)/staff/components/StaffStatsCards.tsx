@@ -57,7 +57,7 @@ function StatCard({ title, value, icon, color, subtitle }: StatCardProps) {
 // ============================================================
 export async function StaffStatsCards() {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user) {return null;}
 
   const supabase = await createSupabaseServerClient();
   const schoolId = user.schoolId;

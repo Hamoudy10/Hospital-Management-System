@@ -273,7 +273,8 @@ export async function createUser(
     await adminClient.auth.admin.createUser({
       email: payload.email,
       password: payload.password,
-      email_confirm: false,
+      // Admin-created accounts should be able to log in immediately
+      email_confirm: true,
       user_metadata: {
         first_name: payload.firstName,
         last_name: payload.lastName,
@@ -299,7 +300,7 @@ export async function createUser(
     phone: payload.phone || null,
     gender: payload.gender || null,
     status: "active",
-    email_verified: false,
+    email_verified: true,
     created_by: currentUser.id,
   });
 
@@ -506,6 +507,152 @@ export async function deactivateUser(
   }
 
   return { success: true, message: "User deactivated successfully." };
+}
+
+// ============================================================
+// HARD DELETE USER (permanent delete)
+// ============================================================
+export async function hardDeleteUser(
+  userId: string,
+  currentUser: AuthUser,
+): Promise<{ success: boolean; message: string }> {
+  // Cannot delete self
+  if (userId === currentUser.id) {
+    return {
+      success: false,
+      message: "You cannot delete your own account.",
+    };
+  }
+
+  const targetUser = await getUserById(userId, currentUser);
+  if (!targetUser) {
+    return { success: false, message: "User not found." };
+  }
+
+  if (!canManageRole(currentUser.role, targetUser.roleName)) {
+    return {
+      success: false,
+      message:
+        "Cannot delete a user with a role equal to or higher than your own.",
+    };
+  }
+
+  const adminClient = await createSupabaseAdminClient();
+
+  const referenceChecks: Array<{
+    table: string;
+    column: string;
+    label: string;
+  }> = [
+    { table: "staff", column: "user_id", label: "staff record" },
+    { table: "students", column: "user_id", label: "student record" },
+    {
+      table: "student_guardians",
+      column: "guardian_user_id",
+      label: "guardian record",
+    },
+    {
+      table: "parent_consents",
+      column: "guardian_user_id",
+      label: "parent consent records",
+    },
+    {
+      table: "staff_leaves",
+      column: "approved_by",
+      label: "staff leave approvals",
+    },
+    { table: "assessments", column: "assessed_by", label: "assessments" },
+    { table: "report_cards", column: "generated_by", label: "report cards" },
+    { table: "attendance", column: "recorded_by", label: "attendance records" },
+    { table: "payments", column: "recorded_by", label: "payment records" },
+    {
+      table: "disciplinary_records",
+      column: "recorded_by",
+      label: "disciplinary records",
+    },
+    {
+      table: "disciplinary_records",
+      column: "resolved_by",
+      label: "disciplinary resolutions",
+    },
+    { table: "messages", column: "sender_id", label: "sent messages" },
+    { table: "messages", column: "receiver_id", label: "received messages" },
+    { table: "notifications", column: "user_id", label: "notifications" },
+    {
+      table: "announcements",
+      column: "created_by",
+      label: "announcements",
+    },
+    {
+      table: "generated_reports",
+      column: "generated_by",
+      label: "generated reports",
+    },
+    {
+      table: "school_settings",
+      column: "updated_by",
+      label: "school settings updates",
+    },
+    { table: "audit_logs", column: "performed_by", label: "audit logs" },
+  ];
+
+  for (const check of referenceChecks) {
+    const { count, error } = await adminClient
+      .from(check.table)
+      .select(check.column, { count: "exact", head: true })
+      .eq(check.column, userId);
+
+    if (error) {
+      return {
+        success: false,
+        message: `Failed to validate references (${check.table}): ${error.message}`,
+      };
+    }
+
+    if ((count ?? 0) > 0) {
+      return {
+        success: false,
+        message: `Cannot delete user: linked to ${check.label}. Deactivate instead.`,
+      };
+    }
+  }
+
+  const { error: profileDeleteError } = await (adminClient
+    .from("user_profiles") as any)
+    .delete()
+    .eq("user_id", userId);
+
+  if (profileDeleteError) {
+    return {
+      success: false,
+      message: `Failed to remove user profile: ${profileDeleteError.message}`,
+    };
+  }
+
+  const { error: userDeleteError } = await (adminClient
+    .from("users") as any)
+    .delete()
+    .eq("user_id", userId);
+
+  if (userDeleteError) {
+    return {
+      success: false,
+      message: `Failed to delete user: ${userDeleteError.message}`,
+    };
+  }
+
+  const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(
+    userId,
+  );
+
+  if (authDeleteError) {
+    return {
+      success: false,
+      message: `Failed to delete auth account: ${authDeleteError.message}`,
+    };
+  }
+
+  return { success: true, message: "User deleted permanently." };
 }
 
 // ============================================================

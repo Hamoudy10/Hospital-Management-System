@@ -9,8 +9,8 @@ import {
   paginatedResponse,
 } from "@/lib/api/response";
 import { validateSearchParams } from "@/lib/api/validation";
-import { MessagesService } from "@/features/communication";
 import {
+  MessagesService,
   sendMessageSchema,
   messageFilterSchema,
 } from "@/features/communication";
@@ -48,10 +48,10 @@ export const POST = withAuth(async (req: NextRequest, user: any) => {
       validated,
     );
 
-    if (!result.success) return errorResponse(result.message, 400);
+    if (!result.success) {return errorResponse(result.message, 400);}
     return successResponse(result, 201);
   } catch (error: any) {
-    if (error.name === "ZodError") return errorResponse(error.errors, 422);
+    if (error.name === "ZodError") {return errorResponse(error.errors, 422);}
     return errorResponse(error.message, 500);
   }
 });

@@ -136,12 +136,12 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 
   // 1. Auth
   const result = await authenticate(supabase);
-  if ('error' in result) return result.error;
+  if ('error' in result) {return result.error;}
   const { schoolId, roleName, userId } = result.auth;
 
   // 2. Validate ID
   const idError = validateStudentId(params.id);
-  if (idError) return idError;
+  if (idError) {return idError;}
 
   const studentId = params.id;
 
@@ -352,12 +352,12 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
   // 1. Auth
   const result = await authenticate(supabase);
-  if ('error' in result) return result.error;
+  if ('error' in result) {return result.error;}
   const { schoolId, roleName } = result.auth;
 
   // 2. Validate ID
   const idError = validateStudentId(params.id);
-  if (idError) return idError;
+  if (idError) {return idError;}
 
   const studentId = params.id;
 
@@ -561,12 +561,12 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
 
   // 1. Auth
   const result = await authenticate(supabase);
-  if ('error' in result) return result.error;
+  if ('error' in result) {return result.error;}
   const { schoolId, roleName } = result.auth;
 
   // 2. Validate ID
   const idError = validateStudentId(params.id);
-  if (idError) return idError;
+  if (idError) {return idError;}
 
   const studentId = params.id;
 

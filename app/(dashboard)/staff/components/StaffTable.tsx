@@ -62,7 +62,7 @@ const statusColors: Record<StaffStatus, 'green' | 'gray' | 'yellow' | 'red'> = {
 // ============================================================
 export async function StaffTable({ filters }: StaffTableProps) {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user) {return null;}
 
   const supabase = await createSupabaseServerClient();
   const { page, pageSize, sortBy, sortOrder, search, position, status, contractType } = filters;
@@ -402,14 +402,14 @@ function PaginationLink({
 }: PaginationLinkProps) {
   const params = new URLSearchParams();
   
-  if (filters.search) params.set('search', filters.search);
-  if (filters.position) params.set('position', filters.position);
-  if (filters.status) params.set('status', filters.status);
-  if (filters.contractType) params.set('contractType', filters.contractType);
+  if (filters.search) {params.set('search', filters.search);}
+  if (filters.position) {params.set('position', filters.position);}
+  if (filters.status) {params.set('status', filters.status);}
+  if (filters.contractType) {params.set('contractType', filters.contractType);}
   params.set('page', String(page));
   params.set('pageSize', String(filters.pageSize));
-  if (filters.sortBy !== 'created_at') params.set('sortBy', filters.sortBy);
-  if (filters.sortOrder !== 'desc') params.set('sortOrder', filters.sortOrder);
+  if (filters.sortBy !== 'created_at') {params.set('sortBy', filters.sortBy);}
+  if (filters.sortOrder !== 'desc') {params.set('sortOrder', filters.sortOrder);}
 
   const href = `/staff?${params.toString()}`;
 

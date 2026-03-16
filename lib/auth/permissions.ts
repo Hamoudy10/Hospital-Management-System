@@ -22,10 +22,10 @@ export function hasPermission(
   action: ActionName,
 ): boolean {
   const rolePermissions = PERMISSION_MATRIX[role];
-  if (!rolePermissions) return false;
+  if (!rolePermissions) {return false;}
 
   const modulePermissions = rolePermissions[module];
-  if (!modulePermissions) return false;
+  if (!modulePermissions) {return false;}
 
   return modulePermissions.includes(action);
 }
@@ -35,7 +35,7 @@ export function hasPermission(
 // ============================================================
 export function hasModuleAccess(role: RoleName, module: ModuleName): boolean {
   const rolePermissions = PERMISSION_MATRIX[role];
-  if (!rolePermissions) return false;
+  if (!rolePermissions) {return false;}
 
   const modulePermissions = rolePermissions[module];
   return !!modulePermissions && modulePermissions.length > 0;
@@ -49,7 +49,7 @@ export function getAllowedActions(
   module: ModuleName,
 ): ActionName[] {
   const rolePermissions = PERMISSION_MATRIX[role];
-  if (!rolePermissions) return [];
+  if (!rolePermissions) {return [];}
 
   return rolePermissions[module] ?? [];
 }
@@ -59,7 +59,7 @@ export function getAllowedActions(
 // ============================================================
 export function getAccessibleModules(role: RoleName): ModuleName[] {
   const rolePermissions = PERMISSION_MATRIX[role];
-  if (!rolePermissions) return [];
+  if (!rolePermissions) {return [];}
 
   return Object.entries(rolePermissions)
     .filter(([, actions]) => actions && actions.length > 0)
@@ -77,7 +77,7 @@ export function canManageRole(
   const managerLevel = ROLE_HIERARCHY[managerRole];
   const targetLevel = ROLE_HIERARCHY[targetRole];
 
-  if (managerLevel === undefined || targetLevel === undefined) return false;
+  if (managerLevel === undefined || targetLevel === undefined) {return false;}
 
   return managerLevel > targetLevel;
 }

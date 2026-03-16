@@ -1,7 +1,8 @@
-// app/(dashboard)/students/page.tsx
+﻿// app/(dashboard)/students/page.tsx
 'use client';
 
-import React, { Suspense, lazy, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
+import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
 import {
   Plus,
@@ -19,6 +20,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
+import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 import { StudentFilters } from './components/StudentFilters';
@@ -34,7 +36,7 @@ import {
 
 const ExportModal = lazy(() => import('./components/ExportModal'));
 
-// ─── Types ───────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface ClassOption {
   classId: string;
   name: string;
@@ -46,10 +48,16 @@ interface GradeOption {
   name: string;
 }
 
+interface ApiResponse<T> {
+  data: T;
+  success?: boolean;
+  message?: string;
+}
+
 type SortField = 'firstName' | 'admissionNumber' | 'enrollmentDate' | 'status';
 type SortOrder = 'asc' | 'desc';
 
-// ─── Stat Card Component ─────────────────────────────────────
+// â”€â”€â”€ Stat Card Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface StatCardProps {
   title: string;
   value: number;
@@ -118,161 +126,132 @@ function StatCard({ title, value, icon, color, subtitle, onClick }: StatCardProp
   );
 }
 
-// ─── Export Modal Component ──────────────────────────────────
-// ─── Main Page Component ─────────────────────────────────────
+// â”€â”€â”€ Export Modal Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ Main Page Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function StudentsPage() {
   const router = useRouter();
-  const { user, checkPermission } = useAuth();
+  const { user, loading, checkPermission } = useAuth();
   const { success, error: toastError, info } = useToast();
 
-  // ─── State ─────────────────────────────────────────────────
-  const [students, setStudents] = useState<PaginatedStudents>({
-    data: [],
-    total: 0,
-    page: 1,
-    limit: 25,
-    totalPages: 0,
-  });
-  const [stats, setStats] = useState<StudentStats | null>(null);
-  const [classes, setClasses] = useState<ClassOption[]>([]);
-  const [grades, setGrades] = useState<GradeOption[]>([]);
-
+  // â”€â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [filters, setFilters] = useState<StudentFiltersType>({});
+  const [debouncedFilters, setDebouncedFilters] = useState<StudentFiltersType>(filters);
   const [sortBy, setSortBy] = useState<SortField>('firstName');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [page, setPage] = useState(1);
 
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showExportModal, setShowExportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const shouldFetch = Boolean(user);
+  const emptyStudents = useMemo<PaginatedStudents>(
+    () => ({
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 25,
+      totalPages: 0,
+    }),
+    []
+  );
+  const studentsQuery = useMemo(() => {
+    const params: StudentQueryParams = {
+      ...debouncedFilters,
+      page,
+      limit: 25,
+      sortBy,
+      sortOrder,
+    };
 
-  // ─── Permissions ───────────────────────────────────────────
+    const queryString = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        queryString.set(key, String(value));
+      }
+    });
+
+    return `/api/students?${queryString.toString()}`;
+  }, [debouncedFilters, page, sortBy, sortOrder]);
+
+  const {
+    data: studentsResponse,
+    error: studentsError,
+    isValidating: isStudentsValidating,
+    mutate: mutateStudents,
+  } = useSWR<ApiResponse<PaginatedStudents>>(
+    shouldFetch ? studentsQuery : null
+  );
+
+  const { data: statsResponse, mutate: mutateStats } = useSWR<
+    ApiResponse<StudentStats>
+  >(shouldFetch ? '/api/students/stats' : null);
+
+  const { data: classesResponse } = useSWR<ApiResponse<any[]>>(
+    shouldFetch ? '/api/settings/classes' : null
+  );
+
+  const { data: gradesResponse } = useSWR<ApiResponse<any[]>>(
+    shouldFetch ? '/api/settings/classes/levels' : null
+  );
+
+  const students = studentsResponse?.data ?? emptyStudents;
+  const stats = statsResponse?.data ?? null;
+  const classes = useMemo<ClassOption[]>(
+    () =>
+      (classesResponse?.data || []).map((c: any) => ({
+        classId: c.class_id || c.classId,
+        name: c.name,
+        gradeName: c.grade?.name || c.gradeName || '',
+      })),
+    [classesResponse]
+  );
+  const grades = useMemo<GradeOption[]>(
+    () =>
+      (gradesResponse?.data || []).map((g: any) => ({
+        gradeId: g.grade_id || g.gradeId || g.id,
+        name: g.name,
+      })),
+    [gradesResponse]
+  );
+  const studentsErrorMessage = studentsError
+    ? studentsError instanceof Error
+      ? studentsError.message
+      : 'Failed to fetch students'
+    : null;
+  const isStudentsLoading = shouldFetch && !studentsResponse && !studentsError;
+  const isStudentsBusy = isStudentsLoading || isStudentsValidating;
+
+  // â”€â”€â”€ Permissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const canCreate = checkPermission('students', 'create');
   const canEdit = checkPermission('students', 'update');
   const canDelete = checkPermission('students', 'delete');
   const canExport = checkPermission('students', 'export');
   const canImport = checkPermission('students', 'create');
-
-  // ─── Fetch Students ────────────────────────────────────────
-  const fetchStudents = useCallback(async () => {
-    try {
-      const params: StudentQueryParams = {
-        ...filters,
-        page,
-        limit: 25,
-        sortBy,
-        sortOrder,
-      };
-
-      const queryString = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
-          queryString.set(key, String(value));
-        }
-      });
-
-      const response = await fetch(`/api/students?${queryString.toString()}`, {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch students');
-      }
-
-      const json = await response.json();
-      setStudents(json.data);
-      setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred';
-      setError(message);
-      toastError('Error', message);
-    }
-  }, [filters, page, sortBy, sortOrder]);
-
-  // ─── Fetch Stats ───────────────────────────────────────────
-  const fetchStats = useCallback(async () => {
-    try {
-      const response = await fetch('/api/students/stats', {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const json = await response.json();
-        setStats(json.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch stats:', err);
-    }
-  }, []);
-
-  // ─── Fetch Classes & Grades ────────────────────────────────
-  const fetchClassesAndGrades = useCallback(async () => {
-    try {
-      // Fetch classes
-      const classesResponse = await fetch('/api/settings/classes', {
-        credentials: 'include',
-      });
-
-      if (classesResponse.ok) {
-        const json = await classesResponse.json();
-        setClasses(
-          (json.data || []).map((c: any) => ({
-            classId: c.class_id || c.classId,
-            name: c.name,
-            gradeName: c.grade?.name || c.gradeName || '',
-          }))
-        );
-      }
-
-      // Fetch grades
-      const gradesResponse = await fetch('/api/settings/classes/levels', {
-        credentials: 'include',
-      });
-
-      if (gradesResponse.ok) {
-        const json = await gradesResponse.json();
-        setGrades(
-          (json.data || []).map((g: any) => ({
-            gradeId: g.grade_id || g.gradeId || g.id,
-            name: g.name,
-          }))
-        );
-      }
-    } catch (err) {
-      console.error('Failed to fetch classes/grades:', err);
-    }
-  }, []);
-
-  // ─── Initial Load ──────────────────────────────────────────
+  
   useEffect(() => {
-    const loadReferenceData = async () => {
-      await Promise.all([fetchStats(), fetchClassesAndGrades()]);
-    };
+    const handle = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 300);
 
-    loadReferenceData();
-  }, [fetchStats, fetchClassesAndGrades]);
+    return () => clearTimeout(handle);
+  }, [filters]);
 
-  // ─── Refetch on filter/sort/page change ────────────────────
   useEffect(() => {
-    const loadStudents = async () => {
-      setIsLoading(true);
-      await fetchStudents();
-      setIsLoading(false);
-    };
+    if (studentsErrorMessage) {
+      toastError('Error', studentsErrorMessage);
+    }
+  }, [studentsErrorMessage, toastError]);
 
-    loadStudents();
-  }, [fetchStudents]);
-
-  // ─── Handlers ──────────────────────────────────────────────
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await Promise.all([fetchStudents(), fetchStats()]);
-    setIsRefreshing(false);
-    success('Refreshed', 'Student data has been updated.');
+    try {
+      await Promise.all([mutateStudents(), mutateStats()]);
+      success('Refreshed', 'Student data has been updated.');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleSort = (field: SortField) => {
@@ -323,8 +302,7 @@ export default function StudentsPage() {
 
       success('Student Deleted', `${student.fullName} has been removed.`);
 
-      fetchStudents();
-      fetchStats();
+      await Promise.all([mutateStudents(), mutateStats()]);
     } catch (err) {
       toastError('Error', 'Failed to delete student. Please try again.');
     }
@@ -355,8 +333,7 @@ export default function StudentsPage() {
 
       success('Status Updated', `${student.fullName} has been ${statusLabels[status] || 'updated'}.`);
 
-      fetchStudents();
-      fetchStats();
+      await Promise.all([mutateStudents(), mutateStats()]);
     } catch (err) {
       toastError('Error', 'Failed to update student status. Please try again.');
     }
@@ -411,14 +388,33 @@ export default function StudentsPage() {
     setPage(1);
   };
 
-  // ─── Render ────────────────────────────────────────────────
+  const error = studentsErrorMessage;
+  const isLoading = isStudentsBusy || isRefreshing;
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner size="lg" />
+          <p className="text-sm text-gray-500">Loading students...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return null;
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Students" />
+        <Alert variant="destructive">
+          Your session has expired. Please sign in again.
+        </Alert>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      {/* ── Page Header ─────────────────────────────────────── */}
+      {/* â”€â”€ Page Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <PageHeader
         title="Students"
         description="Manage student enrollment, profiles, and academic records"
@@ -472,7 +468,7 @@ export default function StudentsPage() {
         </div>
       </PageHeader>
 
-      {/* ── Error Alert ─────────────────────────────────────── */}
+      {/* â”€â”€ Error Alert â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {error && (
         <Alert variant="destructive">
           {error}
@@ -487,7 +483,7 @@ export default function StudentsPage() {
         </Alert>
       )}
 
-      {/* ── Stats Cards ─────────────────────────────────────── */}
+      {/* â”€â”€ Stats Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard
@@ -532,17 +528,17 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* ── Filters ─────────────────────────────────────────── */}
+      {/* â”€â”€ Filters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <StudentFilters
         filters={filters}
         onFiltersChange={handleFiltersChange}
         onReset={handleResetFilters}
         classes={classes}
         grades={grades}
-        isLoading={isLoading || isRefreshing}
+        isLoading={isLoading}
       />
 
-      {/* ── Bulk Actions Bar ────────────────────────────────── */}
+      {/* â”€â”€ Bulk Actions Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {selectedIds.length > 0 && (
         <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
           <span className="text-sm font-medium text-blue-900">
@@ -572,7 +568,7 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* ── Student Table ───────────────────────────────────── */}
+      {/* â”€â”€ Student Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <StudentTable
         students={students}
         isLoading={isLoading}
@@ -589,7 +585,7 @@ export default function StudentsPage() {
         showSelection={canEdit}
       />
 
-      {/* ── Export Modal ────────────────────────────────────── */}
+      {/* â”€â”€ Export Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {showExportModal ? (
         <Suspense fallback={null}>
           <ExportModal
@@ -604,3 +600,5 @@ export default function StudentsPage() {
     </div>
   );
 }
+
+

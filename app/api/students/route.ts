@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
   ];
 
   const auth = await authenticateAndAuthorize(supabase, readRoles);
-  if ('error' in auth && auth.error) return auth.error;
+  if ('error' in auth && auth.error) {return auth.error;}
 
   const { schoolId, roleName, user } = auth as {
     schoolId: string;
@@ -433,7 +433,7 @@ export async function POST(req: NextRequest) {
   ];
 
   const auth = await authenticateAndAuthorize(supabase, writeRoles);
-  if ('error' in auth && auth.error) return auth.error;
+  if ('error' in auth && auth.error) {return auth.error;}
 
   const { schoolId, user } = auth as {
     schoolId: string;

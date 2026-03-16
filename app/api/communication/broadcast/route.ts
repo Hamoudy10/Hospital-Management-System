@@ -4,8 +4,7 @@
 import { NextRequest } from "next/server";
 import { withPermission } from "@/lib/api/withAuth";
 import { successResponse, errorResponse } from "@/lib/api/response";
-import { MessagesService } from "@/features/communication";
-import { broadcastSchema } from "@/features/communication";
+import { MessagesService, broadcastSchema } from "@/features/communication";
 
 export const POST = withPermission(
   "communication",
@@ -20,10 +19,10 @@ export const POST = withPermission(
         validated,
       );
 
-      if (!result.success) return errorResponse(result.message, 400);
+      if (!result.success) {return errorResponse(result.message, 400);}
       return successResponse(result, 201);
     } catch (error: any) {
-      if (error.name === "ZodError") return errorResponse(error.errors, 422);
+      if (error.name === "ZodError") {return errorResponse(error.errors, 422);}
       return errorResponse(error.message, 500);
     }
   },

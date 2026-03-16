@@ -36,6 +36,32 @@ export function calculateFeeStatus(
 }
 
 // ============================================================
+// INVOICE NUMBER GENERATION
+// ============================================================
+async function getInvoiceSequenceStart(
+  supabase: any,
+  schoolId: string,
+): Promise<number> {
+  const year = new Date().getFullYear();
+  const month = String(new Date().getMonth() + 1).padStart(2, "0");
+
+  const { count } = await supabase
+    .from("student_fees")
+    .select("id", { count: "exact", head: true })
+    .eq("school_id", schoolId)
+    .gte("created_at", `${year}-${month}-01`);
+
+  return (count || 0) + 1;
+}
+
+function formatInvoiceNumber(sequence: number) {
+  const year = new Date().getFullYear();
+  const month = String(new Date().getMonth() + 1).padStart(2, "0");
+  const seq = String(sequence).padStart(5, "0");
+  return `INV-${year}${month}-${seq}`;
+}
+
+// ============================================================
 // LIST STUDENT FEES
 // ============================================================
 export async function listStudentFees(
@@ -136,6 +162,7 @@ export async function listStudentFees(
       ? `${row.students.first_name} ${row.students.last_name}`
       : undefined,
     studentAdmissionNo: row.students?.admission_number ?? undefined,
+    invoiceNumber: row.invoice_number ?? undefined,
     feeStructureId: row.fee_structure_id,
     feeStructureName: row.fee_structures?.name ?? undefined,
     amountDue: parseFloat(row.amount_due),
@@ -210,6 +237,7 @@ export async function getStudentFeeById(
       ? `${data.students.first_name} ${data.students.last_name}`
       : undefined,
     studentAdmissionNo: data.students?.admission_number ?? undefined,
+    invoiceNumber: data.invoice_number ?? undefined,
     feeStructureId: data.fee_structure_id,
     feeStructureName: data.fee_structures?.name ?? undefined,
     amountDue: parseFloat(data.amount_due),
@@ -265,12 +293,16 @@ export async function createStudentFee(
     };
   }
 
+  const invoiceSequence = await getInvoiceSequenceStart(supabase, schoolId);
+  const invoiceNumber = formatInvoiceNumber(invoiceSequence);
+
   const { data, error } = await supabase
     .from("student_fees")
     .insert({
       school_id: schoolId,
       student_id: payload.studentId,
       fee_structure_id: payload.feeStructureId,
+      invoice_number: invoiceNumber,
       amount_due: amountDue,
       due_date: payload.dueDate || null,
       academic_year_id: payload.academicYearId,
@@ -341,6 +373,7 @@ export async function bulkAssignFees(
     };
   }
 
+  let invoiceSequence = await getInvoiceSequenceStart(supabaseAny, schoolId);
   let assigned = 0;
   let skipped = 0;
 
@@ -360,12 +393,16 @@ export async function bulkAssignFees(
       continue;
     }
 
+    const invoiceNumber = formatInvoiceNumber(invoiceSequence);
+    invoiceSequence += 1;
+
     const { error } = await supabaseAny
       .from("student_fees")
       .insert({
       school_id: schoolId,
       student_id: sc.student_id,
       fee_structure_id: payload.feeStructureId,
+      invoice_number: invoiceNumber,
       amount_due: feeStructure.amount,
       due_date: payload.dueDate || null,
       academic_year_id: payload.academicYearId,

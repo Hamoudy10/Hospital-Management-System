@@ -884,7 +884,7 @@ function IncidentDetailModal({
   onNotifyParent,
   canEdit,
 }: IncidentDetailModalProps) {
-  if (!incident) return null;
+  if (!incident) {return null;}
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
@@ -1029,7 +1029,7 @@ function IncidentDetailModal({
 // ─── Main Page Component ─────────────────────────────────────
 export default function DisciplinePage() {
   const router = useRouter();
-  const { user, checkPermission } = useAuth();
+  const { user, loading, checkPermission } = useAuth();
   const { success, error: toastError, info } = useToast();
 
   // ─── State ─────────────────────────────────────────────────
@@ -1214,7 +1214,7 @@ export default function DisciplinePage() {
   };
 
   const handleResolve = async () => {
-    if (!detailRecord) return;
+    if (!detailRecord) {return;}
 
     setIsSubmitting(true);
 
@@ -1243,7 +1243,7 @@ export default function DisciplinePage() {
   };
 
   const handleNotifyParent = async () => {
-    if (!detailRecord) return;
+    if (!detailRecord) {return;}
 
     setIsSubmitting(true);
 
@@ -1270,7 +1270,7 @@ export default function DisciplinePage() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteRecord) return;
+    if (!deleteRecord) {return;}
 
     setIsSubmitting(true);
 
@@ -1317,8 +1317,26 @@ export default function DisciplinePage() {
   });
 
   // ─── Render ────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner size="lg" />
+          <p className="text-sm text-gray-500">Loading discipline records...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return null;
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Discipline Management" />
+        <Alert variant="destructive">
+          Your session has expired. Please sign in again.
+        </Alert>
+      </div>
+    );
   }
 
   if (isLoading) {

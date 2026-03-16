@@ -167,7 +167,7 @@ export function SubjectAssignmentForm({
   // Watch selected academic year to filter terms
   const selectedYearId = singleForm.watch('academicYearId');
   const filteredTerms = useMemo(() => {
-    if (!selectedYearId) return terms;
+    if (!selectedYearId) {return terms;}
     return terms.filter((t) => t.academic_year_id === selectedYearId);
   }, [selectedYearId, terms]);
 

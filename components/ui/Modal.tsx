@@ -80,7 +80,7 @@ function Modal({
     };
   }, [open, handleEscape]);
 
-  if (!open) return null;
+  if (!open) {return null;}
 
   // Use portal to render at document root
   return createPortal(

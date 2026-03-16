@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default async function LibraryPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) {redirect("/login");}
 
   return (
     <div className="space-y-6">

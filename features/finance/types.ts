@@ -68,6 +68,7 @@ export interface StudentFee {
   studentId: string;
   studentName?: string;
   studentAdmissionNo?: string;
+  invoiceNumber?: string;
   feeStructureId: string;
   feeStructureName?: string;
   amountDue: number;

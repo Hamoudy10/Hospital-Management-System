@@ -18,7 +18,7 @@ export const GET = withAuth(
         params.id,
         user.id,
       );
-      if (!message) return errorResponse("Message not found", 404);
+      if (!message) {return errorResponse("Message not found", 404);}
       return successResponse(message);
     } catch (error: any) {
       return errorResponse(error.message, 500);
@@ -38,7 +38,7 @@ export const DELETE = withAuth(
         params.id,
         user.id,
       );
-      if (!result.success) return errorResponse(result.message, 400);
+      if (!result.success) {return errorResponse(result.message, 400);}
       return successResponse(result);
     } catch (error: any) {
       return errorResponse(error.message, 500);

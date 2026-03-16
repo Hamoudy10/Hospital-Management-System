@@ -60,7 +60,7 @@ export function AnnouncementsList() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim() || !content.trim()) {return;}
 
     try {
       setCreating(true);

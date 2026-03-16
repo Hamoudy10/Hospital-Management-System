@@ -66,8 +66,8 @@ export function ClassesClient() {
       setLoading(true);
       setError(null);
       const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (selectedYear) params.set("academic_year_id", selectedYear);
+      if (search) {params.set("search", search);}
+      if (selectedYear) {params.set("academic_year_id", selectedYear);}
 
       const res = await fetch(`/api/classes?${params.toString()}`);
       if (!res.ok) {
@@ -92,7 +92,7 @@ export function ClassesClient() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClassName.trim()) return;
+    if (!newClassName.trim()) {return;}
 
     try {
       setCreating(true);

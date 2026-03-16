@@ -164,8 +164,8 @@ interface ToastContainerProps {
 }
 
 function ToastContainer({ toasts, onClose }: ToastContainerProps) {
-  if (typeof window === "undefined") return null;
-  if (toasts.length === 0) return null;
+  if (typeof window === "undefined") {return null;}
+  if (toasts.length === 0) {return null;}
 
   return createPortal(
     <div className="fixed bottom-4 right-4 z-toast flex flex-col gap-2">

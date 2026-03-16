@@ -21,7 +21,7 @@ export const GET = withPermission(
   "view",
   async (request, { user, params }) => {
     const id = params?.id;
-    if (!id) return notFoundResponse("Learning area ID required");
+    if (!id) {return notFoundResponse("Learning area ID required");}
 
     const validation = validateUuid(id);
     if (!validation.success) {

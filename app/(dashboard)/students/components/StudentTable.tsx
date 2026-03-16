@@ -449,7 +449,7 @@ export function StudentTable({
 
   // Handle selection
   const handleSelectAll = () => {
-    if (!onSelectionChange) return;
+    if (!onSelectionChange) {return;}
 
     const allIds = students.data.map((s: StudentWithDetails) => s.studentId);
     const allSelected = allIds.every((id: string) => selectedIds.includes(id));
@@ -462,7 +462,7 @@ export function StudentTable({
   };
 
   const handleSelectOne = (studentId: string) => {
-    if (!onSelectionChange) return;
+    if (!onSelectionChange) {return;}
 
     if (selectedIds.includes(studentId)) {
       onSelectionChange(selectedIds.filter((id) => id !== studentId));
@@ -533,7 +533,7 @@ export function StudentTable({
                       type="checkbox"
                       checked={isAllSelected}
                       ref={(el) => {
-                        if (el) el.indeterminate = isSomeSelected;
+                        if (el) {el.indeterminate = isSomeSelected;}
                       }}
                       onChange={handleSelectAll}
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"

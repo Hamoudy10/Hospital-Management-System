@@ -124,7 +124,7 @@ export default function ReportGenerationClient({
           .order('last_name')
           .order('first_name');
 
-        if (studentsError) throw new Error(studentsError.message);
+        if (studentsError) {throw new Error(studentsError.message);}
 
         const studentList = studentsData ?? [];
 

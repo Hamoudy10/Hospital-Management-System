@@ -425,7 +425,8 @@ export async function createStaff(
     await adminClient.auth.admin.createUser({
       email: payload.email,
       password: payload.password,
-      email_confirm: false,
+      // Admin-created staff should be able to log in immediately
+      email_confirm: true,
       user_metadata: {
         first_name: payload.firstName,
         last_name: payload.lastName,
@@ -470,6 +471,7 @@ export async function createStaff(
   await adminClient.from('user_profiles').insert({
     user_id: userId,
     school_id: schoolId,
+    photo_url: payload.photoUrl || null,
   });
 
   // Step 8: Create staff record
@@ -606,6 +608,21 @@ export async function updateStaff(
 
     if (staffError) {
       return { success: false, message: `Staff update failed: ${staffError.message}` };
+    }
+  }
+
+  // Update profile photo if provided
+  if (payload.photoUrl !== undefined) {
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .update({ photo_url: payload.photoUrl || null })
+      .eq('user_id', existingStaff.userId);
+
+    if (profileError) {
+      return {
+        success: false,
+        message: `Profile update failed: ${profileError.message}`,
+      };
     }
   }
 

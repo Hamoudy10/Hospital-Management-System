@@ -8,8 +8,10 @@ import {
   errorResponse,
   paginatedResponse,
 } from "@/lib/api/response";
-import { AnnouncementsService } from "@/features/communication";
-import { createAnnouncementSchema } from "@/features/communication";
+import {
+  AnnouncementsService,
+  createAnnouncementSchema,
+} from "@/features/communication";
 
 export const GET = withAuth(async (req: NextRequest, user: any) => {
   try {
@@ -54,10 +56,10 @@ export const POST = withPermission(
         user.id,
       );
 
-      if (!result.success) return errorResponse(result.message, 400);
+      if (!result.success) {return errorResponse(result.message, 400);}
       return successResponse(result, 201);
     } catch (error: any) {
-      if (error.name === "ZodError") return errorResponse(error.errors, 422);
+      if (error.name === "ZodError") {return errorResponse(error.errors, 422);}
       return errorResponse(error.message, 500);
     }
   },

@@ -43,38 +43,52 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
   }, [pathname]);
 
   useEffect(() => {
-    const prefetchTargets = navItems
-      .filter((item) => item.href !== pathname)
-      .slice(0, 6);
+    // Only prefetch 2 most likely destinations based on current path
+    const getLikelyDestinations = (): NavItem[] => {
+      // If on dashboard, prefetch students and attendance (most common)
+      if (pathname === '/dashboard') {
+        return [
+          navItems.find(item => item.href === '/students'),
+          navItems.find(item => item.href === '/attendance'),
+        ].filter((item): item is NavItem => item !== undefined);
+      }
+      
+      // If on a specific section, prefetch related sections and dashboard
+      const currentSection = navItems.find(item => 
+        pathname.startsWith(item.href)
+      );
+      
+      if (currentSection) {
+        // Get the section index to find adjacent sections
+        const currentIndex = navItems.findIndex(item => item.href === currentSection.href);
+        const adjacentSections = [
+          navItems[currentIndex - 1],
+          navItems[currentIndex + 1],
+        ].filter((item): item is NavItem => item !== undefined);
+        
+        const dashboardItem = navItems.find(item => item.href === '/dashboard');
+        const items = [
+          dashboardItem,
+          ...adjacentSections,
+        ].filter((item): item is NavItem => item !== undefined && item.href !== pathname);
+        return items.slice(0, 2);
+      }
+      
+      // Default: just prefetch dashboard
+      const dashboardItem = navItems.find(item => item.href === '/dashboard');
+      return dashboardItem ? [dashboardItem] : [];
+    };
 
-    const prefetch = () => {
-      for (const item of prefetchTargets) {
+    const likelyDestinations = getLikelyDestinations();
+    
+    // Delay prefetching to avoid competing with initial page load
+    const timeoutId = setTimeout(() => {
+      for (const item of likelyDestinations) {
         router.prefetch(item.href);
       }
-    };
-
-    let idleCallbackId: number | null = null;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      idleCallbackId = window.requestIdleCallback(prefetch, { timeout: 1500 });
-    } else {
-      timeoutId = globalThis.setTimeout(prefetch, 500);
-    }
-
-    return () => {
-      if (timeoutId !== null) {
-        globalThis.clearTimeout(timeoutId);
-      }
-
-      if (
-        idleCallbackId !== null &&
-        typeof window !== "undefined" &&
-        "cancelIdleCallback" in window
-      ) {
-        window.cancelIdleCallback(idleCallbackId);
-      }
-    };
+    }, 1500); // 1.5 second delay
+    
+    return () => clearTimeout(timeoutId);
   }, [pathname, router]);
 
   const isActive = (href: string) => {
@@ -111,9 +125,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  prefetch
-                  onMouseEnter={() => router.prefetch(item.href)}
-                  onFocus={() => router.prefetch(item.href)}
+                  prefetch={false} // Disable automatic prefetching, we'll handle it manually
                   onClick={() => {
                     if (!active) {
                       setPendingHref(item.href);

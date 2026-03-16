@@ -209,12 +209,12 @@ export function StudentFilters({
       {activeFilterCount > 0 && (
         <div className="flex flex-wrap gap-2 px-2">
           {Object.entries(filters).map(([key, value]) => {
-            if (!value || key === 'search') return null;
+            if (!value || key === 'search') {return null;}
             
             let label = String(value);
-            if (key === 'gradeId') label = grades.find(g => g.gradeId === value)?.name || label;
-            if (key === 'classId') label = classes.find(c => c.classId === value)?.name || label;
-            if (key === 'hasSpecialNeeds') label = 'Special Needs';
+            if (key === 'gradeId') {label = grades.find(g => g.gradeId === value)?.name || label;}
+            if (key === 'classId') {label = classes.find(c => c.classId === value)?.name || label;}
+            if (key === 'hasSpecialNeeds') {label = 'Special Needs';}
             
             return (
               <Badge

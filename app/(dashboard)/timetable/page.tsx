@@ -743,7 +743,7 @@ function SlotDetailModal({
   onDelete,
   canEdit,
 }: SlotDetailModalProps) {
-  if (!slot) return null;
+  if (!slot) {return null;}
 
   const day = DAYS.find((d) => d.value === slot.dayOfWeek);
 
@@ -815,7 +815,7 @@ function SlotDetailModal({
 // ─── Main Page Component ─────────────────────────────────────
 export default function TimetablePage() {
   const router = useRouter();
-  const { user, checkPermission } = useAuth();
+  const { user, loading, checkPermission } = useAuth();
   const { success, error, warning, info } = useToast();
 
   // ─── State ─────────────────────────────────────────────────
@@ -1051,7 +1051,7 @@ export default function TimetablePage() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteSlot) return;
+    if (!deleteSlot) {return;}
 
     setIsSubmitting(true);
 
@@ -1089,8 +1089,26 @@ export default function TimetablePage() {
   const selectedTeacherName = teachers.find((t) => t.staffId === selectedTeacherId)?.name || '';
 
   // ─── Render ────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner size="lg" />
+          <p className="text-sm text-gray-500">Loading timetable...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return null;
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Timetable" />
+        <Alert variant="destructive">
+          Your session has expired. Please sign in again.
+        </Alert>
+      </div>
+    );
   }
 
   if (isLoading) {

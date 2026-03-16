@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
   ];
 
   const result = await authenticate(supabase, writeRoles);
-  if ('error' in result) return result.error;
+  if ('error' in result) {return result.error;}
   const { schoolId, userId } = result.auth;
 
   // 2. Parse and validate request body
@@ -283,7 +283,7 @@ export async function POST(req: NextRequest) {
 
   // 10. Execute inserts in batches
   let insertedCount = 0;
-  let insertErrors: string[] = [];
+  const insertErrors: string[] = [];
 
   if (toInsert.length > 0) {
     const BATCH_SIZE = 100;
@@ -301,7 +301,7 @@ export async function POST(req: NextRequest) {
 
   // 11. Execute updates
   let updatedCount = 0;
-  let updateErrors: string[] = [];
+  const updateErrors: string[] = [];
 
   // Batch updates using Promise.all for better performance
   const UPDATE_BATCH_SIZE = 50;

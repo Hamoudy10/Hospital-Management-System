@@ -48,7 +48,7 @@ export async function generateMetadata({
 // ============================================================
 async function getStaffData(staffId: string) {
   const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  if (!user) {redirect('/login');}
 
   const supabase = await createSupabaseServerClient();
 
@@ -75,7 +75,7 @@ async function getStaffData(staffId: string) {
     .eq('school_id', user.schoolId as string)
     .single();
 
-  if (error || !data) return null;
+  if (error || !data) {return null;}
 
   const userData = data as any;
   const staffUsers = userData.users;

@@ -168,15 +168,15 @@ const PERFORMANCE_LEVELS: {
 
 // ─── Helper Functions ────────────────────────────────────────
 function getLevelConfig(score: PerformanceLevel | null) {
-  if (!score) return null;
+  if (!score) {return null;}
   return PERFORMANCE_LEVELS.find((l) => l.value === score);
 }
 
 function getLevelColor(score: number | null): string {
-  if (!score) return 'text-gray-400';
-  if (score >= 3.5) return 'text-green-600';
-  if (score >= 2.5) return 'text-blue-600';
-  if (score >= 1.5) return 'text-amber-600';
+  if (!score) {return 'text-gray-400';}
+  if (score >= 3.5) {return 'text-green-600';}
+  if (score >= 2.5) {return 'text-blue-600';}
+  if (score >= 1.5) {return 'text-amber-600';}
   return 'text-red-600';
 }
 
@@ -443,7 +443,7 @@ function ScoreEntryGrid({
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const filteredStudents = useMemo(() => {
-    if (!deferredSearchTerm) return students;
+    if (!deferredSearchTerm) {return students;}
     const term = deferredSearchTerm.toLowerCase();
     return students.filter(
       (s) =>
@@ -685,7 +685,7 @@ function ScoreEntryGrid({
 // ─── Main Page Component ─────────────────────────────────────
 export default function AssessmentsPage() {
   const router = useRouter();
-  const { user, checkPermission } = useAuth();
+  const { user, loading, checkPermission } = useAuth();
   const { success, error } = useToast();
 
   // ─── State ─────────────────────────────────────────────────
@@ -795,7 +795,7 @@ export default function AssessmentsPage() {
   }, []);
 
   const fetchStudents = useCallback(async () => {
-    if (!selectedClassId || !selectedCompetencyId) return;
+    if (!selectedClassId || !selectedCompetencyId) {return;}
 
     setIsLoadingStudents(true);
     try {
@@ -895,7 +895,7 @@ export default function AssessmentsPage() {
   };
 
   const handleSave = async () => {
-    if (!selectedClassId || !selectedCompetencyId || students.length === 0) return;
+    if (!selectedClassId || !selectedCompetencyId || students.length === 0) {return;}
 
     setIsSaving(true);
     try {
@@ -933,8 +933,26 @@ export default function AssessmentsPage() {
   };
 
   // ─── Render ────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner size="lg" />
+          <p className="text-sm text-gray-500">Loading assessments...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return null;
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Assessments" />
+        <Alert variant="destructive">
+          Your session has expired. Please sign in again.
+        </Alert>
+      </div>
+    );
   }
 
   if (isLoading) {

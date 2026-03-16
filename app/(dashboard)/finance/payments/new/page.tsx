@@ -340,7 +340,8 @@ function FeeSelection({ studentId, selectedFeeId, onSelect, selectedFee }: FeeSe
   if (fees.length === 0) {
     return (
       <Alert variant="info" title="No Outstanding Fees">
-        This student has no outstanding fees to pay.
+        This student has no outstanding fees to pay. If you expected fees here,
+        ensure fee structures are created and assigned to this student.
       </Alert>
     );
   }
@@ -475,7 +476,7 @@ function ReceiptModal({ open, onClose, receipt }: ReceiptModalProps) {
     window.print();
   };
 
-  if (!receipt) return null;
+  if (!receipt) {return null;}
 
   return (
     <Modal open={open} onClose={onClose} size="md">
@@ -824,7 +825,7 @@ export default function NewPaymentPage() {
         </Card>
 
         {/* Step 2: Select Fee */}
-        {selectedStudent && (
+        {selectedStudent ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -854,10 +855,26 @@ export default function NewPaymentPage() {
               )}
             </CardContent>
           </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base text-gray-400">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-400">
+                  2
+                </div>
+                Select Fee
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Alert variant="info" title="Select a student first">
+                Choose a student to load their outstanding fees.
+              </Alert>
+            </CardContent>
+          </Card>
         )}
 
         {/* Step 3: Payment Details */}
-        {selectedFee && (
+        {selectedFee ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -1037,6 +1054,22 @@ export default function NewPaymentPage() {
                   </div>
                 )}
               />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base text-gray-400">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-400">
+                  3
+                </div>
+                Payment Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Alert variant="info" title="Select a fee to continue">
+                Once you choose a fee, payment details and amount fields will appear here.
+              </Alert>
             </CardContent>
           </Card>
         )}

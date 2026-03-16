@@ -104,6 +104,9 @@ export const createStaffSchema = z.object({
     .max(1000, 'Qualification must be 1000 characters or less')
     .optional(),
 
+  // Optional profile photo URL
+  photoUrl: z.string().url('Photo URL must be a valid URL').optional(),
+
   // Password for the new user account
   password: z
     .string()
@@ -136,6 +139,9 @@ export const updateStaffSchema = z.object({
   contractType: contractTypeSchema.optional().nullable(),
   qualification: z.string().max(1000).optional().nullable(),
   status: staffStatusSchema.optional(),
+
+  // Optional profile photo URL
+  photoUrl: z.string().url().optional().nullable(),
 });
 
 // ============================================================

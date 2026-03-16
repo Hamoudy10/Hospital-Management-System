@@ -43,17 +43,17 @@ export async function GET() {
     };
 
     for (const student of students || []) {
-      if (student.status === "active") stats.active += 1;
-      if (student.status === "transferred") stats.transferred += 1;
-      if (student.status === "graduated") stats.graduated += 1;
-      if (student.status === "withdrawn") stats.withdrawn += 1;
-      if (student.status === "suspended") stats.suspended += 1;
+      if (student.status === "active") {stats.active += 1;}
+      if (student.status === "transferred") {stats.transferred += 1;}
+      if (student.status === "graduated") {stats.graduated += 1;}
+      if (student.status === "withdrawn") {stats.withdrawn += 1;}
+      if (student.status === "suspended") {stats.suspended += 1;}
 
-      if (student.gender === "male") stats.byGender.male += 1;
-      else if (student.gender === "female") stats.byGender.female += 1;
-      else stats.byGender.other += 1;
+      if (student.gender === "male") {stats.byGender.male += 1;}
+      else if (student.gender === "female") {stats.byGender.female += 1;}
+      else {stats.byGender.other += 1;}
 
-      if (student.has_special_needs) stats.withSpecialNeeds += 1;
+      if (student.has_special_needs) {stats.withSpecialNeeds += 1;}
 
       if (student.enrollment_date) {
         const enrollmentDate = new Date(student.enrollment_date);

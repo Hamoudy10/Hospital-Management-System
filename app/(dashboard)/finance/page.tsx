@@ -771,7 +771,7 @@ function FeeStructuresTable({
 // ─── Main Page Component ─────────────────────────────────────
 export default function FinancePage() {
   const router = useRouter();
-  const { user, checkPermission } = useAuth();
+  const { user, loading, checkPermission } = useAuth();
   const { success, error: toastError } = useToast();
 
   // ─── State ─────────────────────────────────────────────────
@@ -955,8 +955,26 @@ export default function FinancePage() {
     : studentsWithBalance;
 
   // ─── Permission Check ──────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner size="lg" />
+          <p className="text-sm text-gray-500">Loading finance...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return null;
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Finance" />
+        <Alert variant="destructive">
+          Your session has expired. Please sign in again.
+        </Alert>
+      </div>
+    );
   }
 
   if (!canViewFinance) {
@@ -1131,6 +1149,13 @@ export default function FinancePage() {
                   onClick={() => router.push('/finance/payments')}
                 >
                   View All Payments
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => router.push('/finance/mpesa')}
+                >
+                  M-Pesa Tracking
                 </Button>
                 {canRecordPayments && (
                   <Button

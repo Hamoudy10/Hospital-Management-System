@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 // ============================================================
 async function getFormData() {
   const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  if (!user) {redirect('/login');}
 
   const supabase = await createSupabaseServerClient();
 

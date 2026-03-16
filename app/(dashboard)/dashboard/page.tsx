@@ -422,7 +422,7 @@ function QuickActions({ role }: { role: string }) {
       action.roles.includes(role) || action.roles.includes('super_admin')
   );
 
-  if (filteredActions.length === 0) return null;
+  if (filteredActions.length === 0) {return null;}
 
   return (
     <Card>
@@ -455,8 +455,8 @@ function QuickActions({ role }: { role: string }) {
 // ─── Dashboard Greeting ──────────────────────────────────────
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
+  if (hour < 12) {return 'Good morning';}
+  if (hour < 17) {return 'Good afternoon';}
   return 'Good evening';
 }
 
@@ -599,7 +599,7 @@ export default function DashboardPage() {
     loadMetrics();
   }, [loadMetrics]);
 
-  if (!user) return null;
+  if (!user) {return null;}
 
   const role = user.role;
   const isAdmin = [

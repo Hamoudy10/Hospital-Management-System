@@ -21,7 +21,7 @@ export const PUT = withPermission(
         params.id,
         body,
       );
-      if (!result.success) return errorResponse(result.message, 400);
+      if (!result.success) {return errorResponse(result.message, 400);}
       return successResponse(result);
     } catch (error: any) {
       return errorResponse(error.message, 500);
@@ -42,7 +42,7 @@ export const DELETE = withPermission(
         user.school_id,
         params.id,
       );
-      if (!result.success) return errorResponse(result.message, 400);
+      if (!result.success) {return errorResponse(result.message, 400);}
       return successResponse(result);
     } catch (error: any) {
       return errorResponse(error.message, 500);

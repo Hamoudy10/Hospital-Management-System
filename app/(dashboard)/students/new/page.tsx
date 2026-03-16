@@ -115,7 +115,7 @@ function PhotoUpload({ value, onChange, disabled }: PhotoUploadProps) {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -589,11 +589,11 @@ export default function NewStudentPage() {
         return basicFields.every(Boolean) ? 'complete' : 'incomplete';
       
       case 'enrollment':
-        if (errors.classId) return 'error';
+        if (errors.classId) {return 'error';}
         return watch('classId') ? 'complete' : 'incomplete';
       
       case 'guardians':
-        if (errors.guardians) return 'error';
+        if (errors.guardians) {return 'error';}
         return guardianFields.length > 0 ? 'complete' : 'incomplete';
       
       default:

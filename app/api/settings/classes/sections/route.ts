@@ -54,10 +54,10 @@ export const POST = withPermission(
       const validated = createClassSchema.parse(body);
       const result = await createClass(validated, user.school_id);
 
-      if (!result.success) return errorResponse(result.message, 400);
+      if (!result.success) {return errorResponse(result.message, 400);}
       return apiSuccess({ id: result.id }, result.message, 201);
     } catch (error: any) {
-      if (error.name === "ZodError") return errorResponse(error.errors, 422);
+      if (error.name === "ZodError") {return errorResponse(error.errors, 422);}
       return errorResponse(error.message, 500);
     }
   },

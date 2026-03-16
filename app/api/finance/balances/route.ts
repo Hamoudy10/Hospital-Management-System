@@ -107,7 +107,7 @@ export const GET = withAuth(async (req: NextRequest, user) => {
         | "partial"
         | "pending"
         | "overdue";
-      if (rowStatus === "overdue") existing.status = "overdue";
+      if (rowStatus === "overdue") {existing.status = "overdue";}
       else if (rowStatus === "partial" && existing.status !== "overdue") {
         existing.status = "partial";
       } else if (

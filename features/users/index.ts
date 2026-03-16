@@ -42,6 +42,7 @@ export {
   updateUser,
   updateUserProfile,
   deactivateUser,
+  hardDeleteUser,
 } from "./services/users.service";
 
 export {

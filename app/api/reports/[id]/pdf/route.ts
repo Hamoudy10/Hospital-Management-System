@@ -403,16 +403,16 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 
 function generateHtmlPreview(data: ReportCardPDFData): string {
   const scoreToLevel = (score: number): string => {
-    if (score >= 3.5) return 'Exceeding Expectations';
-    if (score >= 2.5) return 'Meeting Expectations';
-    if (score >= 1.5) return 'Approaching Expectations';
+    if (score >= 3.5) {return 'Exceeding Expectations';}
+    if (score >= 2.5) {return 'Meeting Expectations';}
+    if (score >= 1.5) {return 'Approaching Expectations';}
     return 'Below Expectations';
   };
 
   const scoreToColor = (score: number): string => {
-    if (score >= 3.5) return '#22c55e';
-    if (score >= 2.5) return '#3b82f6';
-    if (score >= 1.5) return '#f59e0b';
+    if (score >= 3.5) {return '#22c55e';}
+    if (score >= 2.5) {return '#3b82f6';}
+    if (score >= 1.5) {return '#f59e0b';}
     return '#ef4444';
   };
 
@@ -422,7 +422,7 @@ function generateHtmlPreview(data: ReportCardPDFData): string {
       : '0';
 
   const formatDate = (dateStr: string | null): string => {
-    if (!dateStr) return 'N/A';
+    if (!dateStr) {return 'N/A';}
     return new Date(dateStr).toLocaleDateString('en-KE', {
       day: 'numeric',
       month: 'long',

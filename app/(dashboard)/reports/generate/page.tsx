@@ -26,7 +26,7 @@ export default async function GenerateReportsPage() {
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();
-  if (!authUser) redirect('/login');
+  if (!authUser) {redirect('/login');}
 
   // 2. Fetch user with role
   const { data: user } = await supabase
@@ -35,14 +35,14 @@ export default async function GenerateReportsPage() {
     .eq('user_id', authUser.id)
     .single();
 
-  if (!user || !(user as any).school_id) redirect('/login');
+  if (!user || !(user as any).school_id) {redirect('/login');}
 
   const roleName = ((user as any).roles as Record<string, string>)?.name ?? 'student';
   const schoolId = (user as any).school_id;
 
   // 3. Admin-only access
   const allowedRoles = ['super_admin', 'school_admin', 'principal', 'deputy_principal'];
-  if (!allowedRoles.includes(roleName)) redirect('/dashboard');
+  if (!allowedRoles.includes(roleName)) {redirect('/dashboard');}
 
   // 4. Get active academic year
   const { data: activeYear } = await supabase

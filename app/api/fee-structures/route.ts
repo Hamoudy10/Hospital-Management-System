@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
   ];
 
   const result = await authenticate(supabase, readRoles);
-  if ('error' in result) return result.error;
+  if ('error' in result) {return result.error;}
   const { schoolId } = result.auth;
 
   // 2. Parse query params
@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
   ];
 
   const result = await authenticate(supabase, writeRoles);
-  if ('error' in result) return result.error;
+  if ('error' in result) {return result.error;}
   const { schoolId, userId } = result.auth;
 
   // 2. Parse and validate request body
